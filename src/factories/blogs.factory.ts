@@ -4,11 +4,11 @@ import {
     BlogViewModelForSaClass,
     BlogViewModelForSaPaginationClass,
 } from "../entities/blogs.entity";
-import { BlogClass } from "../schemas/blogs.schema";
+import { Blogs } from "../schemas/blogs.schema";
 import { BlogClassPaginationDto } from "../dtos/blogs.dto";
 
 export class BlogsFactory {
-    static async createBlogViewModelClass(blog: BlogClass): Promise<BlogViewModelClass> {
+    static async createBlogViewModelClass(blog: Blogs): Promise<BlogViewModelClass> {
         return new BlogViewModelClass(
             blog.id.toString(),
             blog.name,
@@ -22,11 +22,15 @@ export class BlogsFactory {
     static async createBlogViewModelPaginationClass(
         dto: BlogClassPaginationDto,
     ): Promise<BlogViewModelClassPagination> {
-        dto.items.forEach((elem) => (elem.id = elem.id.toString()));
-        return new BlogViewModelClassPagination(dto.pagesCount, dto.page, dto.pageSize, dto.totalCount, dto.items);
+        const result = await Promise.all(
+            dto.items.map((elem) => {
+                return BlogsFactory.createBlogViewModelClass(elem);
+            }),
+        );
+        return new BlogViewModelClassPagination(dto.pagesCount, dto.page, dto.pageSize, dto.totalCount, result);
     }
 
-    static async createBlogViewModelForSaClass(blog: BlogClass): Promise<BlogViewModelForSaClass> {
+    static async createBlogViewModelForSaClass(blog: Blogs): Promise<BlogViewModelForSaClass> {
         return new BlogViewModelForSaClass(
             blog.id.toString(),
             blog.name,

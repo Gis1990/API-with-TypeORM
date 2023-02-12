@@ -2,7 +2,7 @@ import { IsBlogsIdExistInTheRequestBody } from "../decorators/blogs/blogs.custom
 import { IsString, Length, IsNotEmpty, IsNumber, IsOptional } from "class-validator";
 import { Transform, TransformFnParams, Type } from "class-transformer";
 import { IsPostIdExist } from "../decorators/posts/posts.custom.decorators";
-import { PostsClass } from "../schemas/posts.schema";
+import { Posts } from "../schemas/posts.schema";
 
 export class ModelForGettingAllPosts {
     @IsNumber()
@@ -85,7 +85,7 @@ export class PostClassPaginationDto {
     public page: number;
     public pageSize: number;
     public totalCount: number;
-    public items: PostsClass[];
+    public items: Posts[];
 }
 
 export class ExtendedLikesInfoClass {

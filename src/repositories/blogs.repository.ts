@@ -2,13 +2,13 @@ import { Injectable } from "@nestjs/common";
 import { CreatedBlogDto, ForBanUnbanBlogBySuperAdminDto, InputModelForUpdatingBlog } from "../dtos/blogs.dto";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
-import { BlogClass } from "../schemas/blogs.schema";
+import { Blogs } from "../schemas/blogs.schema";
 
 @Injectable()
 export class BlogsRepository {
     constructor(@InjectDataSource() private dataSource: DataSource) {}
 
-    async createBlog(newBlog: CreatedBlogDto): Promise<BlogClass> {
+    async createBlog(newBlog: CreatedBlogDto): Promise<Blogs> {
         const query = `INSERT INTO blogs (name, description, "websiteUrl", "createdAt", "isBanned", "banDate", "blogOwnerUserId", "blogOwnerLogin", "isMembership") 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`;
         const values = [

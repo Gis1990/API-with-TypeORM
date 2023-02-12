@@ -10,6 +10,9 @@ import { ReturnAllDevicesUseCase } from "../../commands/security/return-all-devi
 import { CqrsModule } from "@nestjs/cqrs";
 import { GetUserByIdQuery } from "../../queries/users/get-user-by-id-query";
 import { GetUserByDeviceIdQuery } from "../../queries/users/get-user-by-device-id-query";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Users } from "../../schemas/users.schema";
+import { Devices } from "../../schemas/devices.schema";
 
 const useCases = [CheckAccessRightsUseCase, TerminateAllDevicesUseCase, ReturnAllDevicesUseCase];
 const queries = [GetUserByIdQuery, GetUserByDeviceIdQuery];
@@ -24,6 +27,6 @@ const queries = [GetUserByIdQuery, GetUserByDeviceIdQuery];
         ...useCases,
         ...queries,
     ],
-    imports: [CqrsModule],
+    imports: [CqrsModule, TypeOrmModule.forFeature([Users, Devices])],
 })
 export class SecurityModule {}

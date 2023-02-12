@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { BanInfoClass, CreatedNewUserDto } from "../dtos/users.dto";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
-import { UsersClass } from "../schemas/users.schema";
+import { Users } from "../schemas/users.schema";
 
 @Injectable()
 export class UsersRepository {
@@ -114,7 +114,7 @@ export class UsersRepository {
         return result[1] > 0;
     }
 
-    async createUser(newUser: CreatedNewUserDto): Promise<UsersClass> {
+    async createUser(newUser: CreatedNewUserDto): Promise<Users> {
         const result = await this.dataSource.query(
             `INSERT INTO users (login, email, "passwordHash", "createdAt", "emailConfirmed", "emailConfirmationCode", "emailExpirationDate",
             "emailRecoveryCode", "emailRecoveryExpirationDate", "isBanned", "banDate", "banReason", "currentSessionLastActiveDate", "currentSessionDeviceId",

@@ -32,6 +32,9 @@ import { GetUserByRecoveryCodeQuery } from "../../queries/users/get-user-by-reco
 import { GetUserByConfirmationCodeQuery } from "../../queries/users/get-user-by-confirmation-code-query";
 import { GetUserByLoginOrEmailQuery } from "../../queries/users/get-user-by-login-or-email-query";
 import { UsersQueryRepository } from "../../query-repositories/users.query.repository";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Users } from "../../schemas/users.schema";
+import { LoginAttempts } from "../../schemas/login.attempts.schema";
 
 const useCases = [
     AcceptNewPasswordUseCase,
@@ -72,6 +75,13 @@ const queries = [
         ...useCases,
         ...queries,
     ],
-    imports: [CqrsModule, PassportModule, JwtModule.register({}), MailModule, BcryptModule],
+    imports: [
+        CqrsModule,
+        PassportModule,
+        JwtModule.register({}),
+        MailModule,
+        BcryptModule,
+        TypeOrmModule.forFeature([Users, LoginAttempts]),
+    ],
 })
 export class AuthModule {}

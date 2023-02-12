@@ -1,4 +1,4 @@
-import { CommentsClass } from "../schemas/comments.schema";
+import { Comments } from "../schemas/comments.schema";
 import { CommentClassPaginationDto, ModelForGettingAllComments } from "../dtos/comments.dto";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
@@ -6,7 +6,7 @@ import { DataSource } from "typeorm";
 export class CommentsQueryRepository {
     constructor(@InjectDataSource() private dataSource: DataSource) {}
 
-    async getCommentById(id: string, userId: number | undefined): Promise<CommentsClass | null> {
+    async getCommentById(id: string, userId: number | undefined): Promise<Comments | null> {
         let correctId;
         if (id) {
             correctId = Number(id);
@@ -201,7 +201,7 @@ export class CommentsQueryRepository {
         };
     }
 
-    async getCommentByIdForLikeOperation(id: number): Promise<CommentsClass> {
+    async getCommentByIdForLikeOperation(id: number): Promise<Comments> {
         const result = await this.dataSource.query(`SELECT * FROM comments WHERE id = $1`, [id]);
         if (!result[0]) {
             return null;

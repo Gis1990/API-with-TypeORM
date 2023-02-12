@@ -1,5 +1,5 @@
 import { BcryptService } from "../../modules/utils/bcrypt/bcrypt.service";
-import { UsersClass } from "../../schemas/users.schema";
+import { Users } from "../../schemas/users.schema";
 import { UsersRepository } from "../../repositories/users.repository";
 import { CommandHandler, ICommandHandler, QueryBus } from "@nestjs/cqrs";
 import { GetUserByIdCommand } from "../../queries/users/get-user-by-id-query";
@@ -22,7 +22,7 @@ export class CheckCredentialsUseCase implements ICommandHandler<CheckCredentials
         private bcryptService: BcryptService,
     ) {}
 
-    async execute(command: CheckCredentialsCommand): Promise<UsersClass | null> {
+    async execute(command: CheckCredentialsCommand): Promise<Users | null> {
         const user = await this.queryBus.execute(new GetUserByLoginOrEmailCommand(command.loginOrEmail));
         if (!user) return null;
         await this.usersRepository.addLoginAttempt(user.id, command.ip);

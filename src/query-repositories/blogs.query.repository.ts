@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { BlogClassPaginationDto, ModelForGettingAllBlogs } from "../dtos/blogs.dto";
-import { BlogClass } from "../schemas/blogs.schema";
 import { DataSource } from "typeorm";
 import { InjectDataSource } from "@nestjs/typeorm";
-import { BannedBlogsClass } from "../schemas/users.schema";
+import { BannedBlogs } from "../schemas/banned.blogs.schema";
+import { Blogs } from "../schemas/blogs.schema";
 
 @Injectable()
 export class BlogsQueryRepository {
@@ -121,7 +121,7 @@ export class BlogsQueryRepository {
         };
     }
 
-    async getBlogById(id: string): Promise<BlogClass | null> {
+    async getBlogById(id: string): Promise<Blogs | null> {
         let correctId;
         if (id) {
             correctId = Number(id);
@@ -138,7 +138,7 @@ export class BlogsQueryRepository {
         return result[0] || null;
     }
 
-    async getBlogByIdForBanUnbanOperation(id: string): Promise<BlogClass | null> {
+    async getBlogByIdForBanUnbanOperation(id: string): Promise<Blogs | null> {
         let correctId;
         if (id) {
             correctId = Number(id);
@@ -150,7 +150,7 @@ export class BlogsQueryRepository {
         return result[0] || null;
     }
 
-    async getBlogByIdWithCorrectViewModel(id: string): Promise<BlogClass | null> {
+    async getBlogByIdWithCorrectViewModel(id: string): Promise<Blogs | null> {
         let correctId;
         if (id) {
             correctId = Number(id);
@@ -166,7 +166,7 @@ export class BlogsQueryRepository {
         return result[0] || null;
     }
 
-    async getBannedBlogsForUser(userId: number): Promise<BannedBlogsClass | null> {
+    async getBannedBlogsForUser(userId: number): Promise<BannedBlogs | null> {
         if (!Number.isInteger(userId)) {
             return null;
         }

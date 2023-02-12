@@ -1,4 +1,4 @@
-import { CommentsClass } from "../schemas/comments.schema";
+import { Comments } from "../schemas/comments.schema";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { CreatedCommentDto } from "../dtos/comments.dto";
@@ -6,7 +6,7 @@ import { CreatedCommentDto } from "../dtos/comments.dto";
 export class CommentsRepository {
     constructor(@InjectDataSource() private dataSource: DataSource) {}
 
-    async createComment(newComment: CreatedCommentDto): Promise<CommentsClass> {
+    async createComment(newComment: CreatedCommentDto): Promise<Comments> {
         const query = `INSERT INTO comments (content, "createdAt", "commentOwnerUserId", "postId", "commentOwnerUserLogin")
         VALUES ($1, $2, $3, $4, $5) RETURNING *`;
         const values = [

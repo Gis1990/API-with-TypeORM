@@ -4,11 +4,11 @@ import {
     UserViewModelForBannedUsersByBloggerClass,
     UserViewModelForBannedUsersByBloggerPaginationClass,
 } from "../entities/users.entity";
-import { UsersClass } from "../schemas/users.schema";
+import { Users } from "../schemas/users.schema";
 import { UsersClassPaginationDto } from "../dtos/users.dto";
 
 export class UsersFactory {
-    static async createUserViewModelClass(user: UsersClass): Promise<UserViewModelClass> {
+    static async createUserViewModelClass(user: Users): Promise<UserViewModelClass> {
         return new UserViewModelClass(user.id.toString(), user.login, user.email, user.createdAt, {
             isBanned: user.isBanned,
             banDate: user.banDate,

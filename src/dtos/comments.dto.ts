@@ -1,7 +1,7 @@
 import { IsString, Length, IsIn, IsNotEmpty, IsNumber, IsOptional } from "class-validator";
 import { Transform, TransformFnParams, Type } from "class-transformer";
 import { IsCommentsIdExist } from "../decorators/comments/comments.custom.decorators";
-import { CommentsClass } from "../schemas/comments.schema";
+import { Comments } from "../schemas/comments.schema";
 
 const listOfCorrectLikeStatus = ["Like", "Dislike", "None"];
 
@@ -64,7 +64,7 @@ export class CommentClassPaginationDto {
     public page: number;
     public pageSize: number;
     public totalCount: number;
-    public items: CommentsClass[];
+    public items: Comments[];
 }
 
 export class LikesInfoClass {

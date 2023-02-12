@@ -2,7 +2,7 @@ import { IsString, Length, Matches, IsNotEmpty, IsNumber, IsOptional, IsBoolean,
 import { IsEmailExist, IsLoginExist, IsUsersIdExist } from "../decorators/users/users.custom.decorators";
 import { Transform, TransformFnParams, Type } from "class-transformer";
 import { IsBlogsIdExistInTheRequestBody } from "../decorators/blogs/blogs.custom.decorators";
-import { UsersClass } from "../schemas/users.schema";
+import { Users } from "../schemas/users.schema";
 
 const pattern = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
 const listOfCorrectBanStatus = ["all", "banned", "notBanned"];
@@ -134,7 +134,7 @@ export class UsersClassPaginationDto {
     public page: number;
     public pageSize: number;
     public totalCount: number;
-    public items: UsersClass[];
+    public items: Users[];
 }
 
 export class UserModelClass {

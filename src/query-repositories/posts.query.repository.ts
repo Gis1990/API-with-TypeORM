@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { PostsClass } from "../schemas/posts.schema";
+import { Posts } from "../schemas/posts.schema";
 import { ModelForGettingAllPosts, PostClassPaginationDto } from "../dtos/posts.dto";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
@@ -161,7 +161,7 @@ export class PostsQueryRepository {
         };
     }
 
-    async getPostById(id: string, userId: number | undefined): Promise<PostsClass | null> {
+    async getPostById(id: string, userId: number | undefined): Promise<Posts | null> {
         let correctId;
         if (id) {
             correctId = Number(id);
@@ -225,7 +225,7 @@ export class PostsQueryRepository {
         return result[0] || null;
     }
 
-    async getPostByIdForOperationWithLikes(id: number): Promise<PostsClass | null> {
+    async getPostByIdForOperationWithLikes(id: number): Promise<Posts | null> {
         const result = await this.dataSource.query(`SELECT * FROM posts WHERE id = $1`, [id]);
         if (!result[0]) {
             return null;

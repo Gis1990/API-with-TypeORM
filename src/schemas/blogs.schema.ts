@@ -1,34 +1,39 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Users } from "./users.schema";
 
 @Entity()
-export class BlogClass {
+export class Blogs {
     @PrimaryGeneratedColumn()
-    id: string;
+    id: number;
 
-    @Column()
+    @Column({ collation: "C", nullable: false })
     name: string;
 
-    @Column()
+    @Column({ collation: "C", nullable: false })
     description: string;
 
-    @Column()
+    @Column({ nullable: false })
     websiteUrl: string;
 
-    @Column()
+    @Column({ type: "timestamp without time zone", nullable: false })
     createdAt: Date;
 
-    @Column()
+    @Column({ nullable: false })
     isBanned: boolean;
 
-    @Column()
+    @Column({ nullable: true })
     banDate: Date;
 
-    @Column()
-    blogOwnerUserId: string;
+    @Column({ type: "integer", nullable: false })
+    blogOwnerUserId: number;
 
-    @Column()
+    @Column({ nullable: false })
     blogOwnerLogin: string;
 
-    @Column()
+    @Column({ nullable: false })
     isMembership: boolean;
+
+    @ManyToOne(() => Users)
+    @JoinColumn({ name: "blogOwnerUserId" })
+    blogOwner: Users;
 }

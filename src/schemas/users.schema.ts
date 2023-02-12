@@ -1,112 +1,57 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, Unique } from "typeorm";
 
 @Entity()
-export class UsersClass {
+export class Users {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ nullable: false })
+    @Unique(["login"])
     login: string;
 
-    @Column()
+    @Column({ nullable: false })
+    @Unique(["email"])
     email: string;
 
-    @Column()
+    @Column({ nullable: false })
     passwordHash: string;
 
-    @Column()
+    @Column({ nullable: false })
     createdAt: Date;
 
-    @Column()
+    @Column({ nullable: false })
     emailConfirmed: boolean;
 
-    @Column()
+    @Column({ nullable: false })
     emailConfirmationCode: string;
 
-    @Column()
+    @Column({ nullable: false })
     emailExpirationDate: Date;
 
-    @Column()
+    @Column({ nullable: true })
     emailRecoveryCode: string;
 
-    @Column()
+    @Column({ nullable: true })
     emailRecoveryExpirationDate: Date;
 
-    @Column()
+    @Column({ nullable: false })
     isBanned: boolean;
 
-    @Column()
+    @Column({ nullable: true })
     banDate: Date;
 
-    @Column()
+    @Column({ nullable: true })
     banReason: string;
 
-    @Column()
-    lastActiveDate: Date;
+    @Column({ nullable: true })
+    currentSessionLastActiveDate: Date;
 
-    @Column()
-    deviceId: string;
+    @Column({ nullable: true })
+    currentSessionDeviceId: string;
 
-    @Column()
-    ip: string;
+    @Column({ nullable: true })
+    currentSessionIp: string;
 
-    @Column()
-    title: string;
-}
-
-@Entity()
-export class BannedBlogsClass {
-    @PrimaryGeneratedColumn()
-    id: number;
-
-    @Column()
-    userId: number;
-
-    @Column()
-    blogId: number;
-
-    @Column()
-    isBanned: boolean;
-
-    @Column()
-    banDate: Date;
-
-    @Column()
-    banReason: string;
-}
-
-@Entity()
-export class DevicesClass {
-    @PrimaryGeneratedColumn()
-    id: number;
-
-    @Column()
-    userId: number;
-
-    @Column()
-    ip: string;
-
-    @Column()
-    lastActiveDate: Date;
-
-    @Column()
-    deviceId: string;
-
-    @Column()
-    title: string;
-}
-
-@Entity()
-export class LoginAttemptsClass {
-    @PrimaryGeneratedColumn()
-    id: number;
-
-    @Column()
-    userId: number;
-
-    @Column()
-    attemptDate: Date;
-
-    @Column()
-    ip: string;
+    @Column({ nullable: true })
+    currentSessionTitle: string;
 }

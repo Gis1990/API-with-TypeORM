@@ -1,7 +1,7 @@
 import { IsString, Length, Matches, IsNotEmpty, IsNumber, IsOptional, IsBoolean } from "class-validator";
 import { IsBlogsIdExist, IsBlogsIdExistForBanUnbanOperation } from "../decorators/blogs/blogs.custom.decorators";
 import { Transform, TransformFnParams, Type } from "class-transformer";
-import { BlogClass } from "../schemas/blogs.schema";
+import { Blogs } from "../schemas/blogs.schema";
 
 const pattern = /^https:\/\/([a-zA-Z0-9_-]+\.)+[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*\/?$/;
 
@@ -101,5 +101,5 @@ export class BlogClassPaginationDto {
     public page: number;
     public pageSize: number;
     public totalCount: number;
-    public items: BlogClass[];
+    public items: Blogs[];
 }

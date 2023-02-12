@@ -1,40 +1,38 @@
-import { Entity, Column, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Users } from "./users.schema";
+import { Blogs } from "./blogs.schema";
 
 @Entity()
-export class PostsClass {
+export class Posts {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ type: "varchar", length: 255, nullable: false })
     title: string;
 
-    @Column()
+    @Column({ type: "varchar", length: 255, nullable: false })
     shortDescription: string;
 
-    @Column()
+    @Column({ nullable: false })
     content: string;
 
-    @Column()
+    @CreateDateColumn({ nullable: false })
     createdAt: Date;
 
-    @Column()
+    @ManyToOne(() => Blogs)
+    @JoinColumn({ name: "blogId" })
+    blog: Blogs;
+
+    @Column({ nullable: false })
     blogId: number;
 
-    @Column()
-    blogName: string;
+    @ManyToOne(() => Users)
+    @JoinColumn({ name: "postOwnerUserId" })
+    postOwnerUser: Users;
 
-    @Column()
-    likesCount: number;
-
-    @Column()
-    dislikesCount: number;
-
-    @Column()
-    myStatus: string;
-
-    @Column()
+    @Column({ nullable: false })
     postOwnerUserId: number;
 
-    @Column()
-    lastLikes: [];
+    @Column({ nullable: false })
+    blogName: string;
 }

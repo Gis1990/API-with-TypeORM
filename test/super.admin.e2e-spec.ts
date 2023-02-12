@@ -144,7 +144,7 @@ describe("super admin endpoint users /sa/users (e2e)", () => {
                 .expect(404);
         });
         it("should return status 401 ", async () => {
-            await request(app.getHttpServer()).delete(`/sa/users/5`).expect(401);
+            await request(app.getHttpServer()).delete(`/sa/users/1233`).expect(401);
         });
         it("should return status 204 ", async () => {
             await request(app.getHttpServer())

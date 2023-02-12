@@ -23,6 +23,13 @@ import { PostsRepository } from "../../repositories/posts.repository";
 import { GetAllCommentsForAllPostsForBloggersBlogsQuery } from "../../queries/comments/get-all-comments-for-all-posts-for-blogs-query";
 import { UpdatePostUseCase } from "../../commands/posts/update-post-use-case";
 import { CreatePostUseCase } from "../../commands/posts/create-post-use-case";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Users } from "../../schemas/users.schema";
+import { Blogs } from "../../schemas/blogs.schema";
+import { Comments } from "../../schemas/comments.schema";
+import { Posts } from "../../schemas/posts.schema";
+import { UsersWhoPutLikeForPost } from "../../schemas/users.who.put.like.for.post.schema";
+import { UsersWhoPutDislikeForPost } from "../../schemas/users.who.put.dislike.for.post.schema";
 
 const useCases = [
     CreateBlogUseCase,
@@ -41,7 +48,10 @@ const queries = [
 ];
 
 @Module({
-    imports: [CqrsModule],
+    imports: [
+        CqrsModule,
+        TypeOrmModule.forFeature([Users, Blogs, Posts, Comments, UsersWhoPutDislikeForPost, UsersWhoPutLikeForPost]),
+    ],
     controllers: [BloggerController],
     providers: [
         BlogsRepository,

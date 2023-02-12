@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { UsersClass } from "../schemas/users.schema";
+import { Users } from "../schemas/users.schema";
 import {
     ModelForGettingAllBannedUsersForBlog,
     ModelForGettingAllUsers,
@@ -207,21 +207,21 @@ export class UsersQueryRepository {
         return correctUser || null;
     }
 
-    async getUserByLoginOrEmail(loginOrEmail: string): Promise<UsersClass | null> {
+    async getUserByLoginOrEmail(loginOrEmail: string): Promise<Users | null> {
         const result = await this.dataSource.query(`SELECT * FROM users WHERE login = $1 OR email = $1`, [
             loginOrEmail,
         ]);
         return result[0] || null;
     }
 
-    async getUserByConfirmationCode(emailConfirmationCode: string): Promise<UsersClass | null> {
+    async getUserByConfirmationCode(emailConfirmationCode: string): Promise<Users | null> {
         const result = await this.dataSource.query(`SELECT * FROM users WHERE "emailConfirmationCode"=$1`, [
             emailConfirmationCode,
         ]);
         return result[0] || null;
     }
 
-    async getUserByRecoveryCode(recoveryCode: string): Promise<UsersClass | null> {
+    async getUserByRecoveryCode(recoveryCode: string): Promise<Users | null> {
         const result = await this.dataSource.query(`SELECT * FROM users WHERE "emailRecoveryCode" = $1`, [
             recoveryCode,
         ]);

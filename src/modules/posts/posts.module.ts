@@ -20,6 +20,10 @@ import { GetPostByIdForLikeOperationQuery } from "../../queries/posts/get-post-b
 import { GetUserByIdQuery } from "../../queries/users/get-user-by-id-query";
 import { UsersQueryRepository } from "../../query-repositories/users.query.repository";
 import { GetBannedBlogsForUserQuery } from "../../queries/blogs/get-banned-blogs-for-user-query";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Users } from "../../schemas/users.schema";
+import { Comments } from "../../schemas/comments.schema";
+import { Posts } from "../../schemas/posts.schema";
 
 const useCases = [UpdatePostUseCase, DeletePostUseCase, LikeOperationForPostUseCase, CreateCommentUseCase];
 const queries = [
@@ -33,7 +37,7 @@ const queries = [
 ];
 
 @Module({
-    imports: [CqrsModule, forwardRef(() => BlogsModule)],
+    imports: [CqrsModule, forwardRef(() => BlogsModule), TypeOrmModule.forFeature([Users, Comments, Posts])],
     controllers: [PostsController],
     providers: [
         PostsRepository,

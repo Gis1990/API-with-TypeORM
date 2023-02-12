@@ -1,9 +1,8 @@
-import { PostsClass } from "../schemas/posts.schema";
 import { PostViewModelClass, PostViewModelClassPagination } from "../entities/posts.entity";
 import { PostClassPaginationDto } from "../dtos/posts.dto";
 
 export class PostsFactory {
-    static async createPostViewModelClass(post: PostsClass): Promise<PostViewModelClass> {
+    static async createPostViewModelClass(post: any): Promise<PostViewModelClass> {
         let correctLikes = [];
         if (post.lastLikes) {
             correctLikes = post.lastLikes.map((elem: string) => {

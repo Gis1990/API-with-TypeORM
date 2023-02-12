@@ -26,6 +26,10 @@ import { GetUserByIdQuery } from "../../queries/users/get-user-by-id-query";
 import { BanUnbanBlogBySuperAdminUseCase } from "../../commands/blogs/ban-unban-blog-by-super-admin-use-case";
 import { GetBlogByIdForBanUnbanOperationQuery } from "../../queries/blogs/get-blog-by-id-for-ban-unban-operation-query";
 import { GetAllUsersQuery } from "../../queries/users/get-all-users-query";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Users } from "../../schemas/users.schema";
+import { Blogs } from "../../schemas/blogs.schema";
+import { BannedBlogs } from "../../schemas/banned.blogs.schema";
 
 const useCases = [
     BindUserWithBlogUseCase,
@@ -44,7 +48,7 @@ const queries = [
 ];
 
 @Module({
-    imports: [CqrsModule],
+    imports: [CqrsModule, TypeOrmModule.forFeature([Users, Blogs, BannedBlogs])],
     controllers: [SuperAdminController],
     providers: [
         AuthService,

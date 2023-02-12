@@ -1,24 +1,22 @@
 import { Entity, Column, PrimaryGeneratedColumn, JoinColumn, ManyToOne } from "typeorm";
-import { Users } from "./users.schema";
 import { Posts } from "./posts.schema";
 
-@Entity()
-export class Comments {
+@Entity("usersWhoPutDislikeForPost")
+export class UsersWhoPutDislikeForPost {
     @PrimaryGeneratedColumn()
     id: number;
 
     @Column({ nullable: false })
-    content: string;
+    userId: number;
 
     @Column({ nullable: false })
-    createdAt: Date;
+    postId: number;
 
-    @ManyToOne(() => Users)
-    @JoinColumn({ name: "commentOwnerUserId" })
-    commentOwnerUserId: Users;
+    @Column({ nullable: true })
+    addedAt: Date;
 
-    @Column({ name: "commentOwnerUserLogin" })
-    commentOwnerUserLogin: string;
+    @Column({ nullable: false })
+    login: string;
 
     @ManyToOne(() => Posts)
     @JoinColumn({ name: "postId" })

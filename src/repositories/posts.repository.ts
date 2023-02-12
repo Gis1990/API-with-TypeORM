@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { CreatedPostDto } from "../dtos/posts.dto";
-import { PostsClass } from "../schemas/posts.schema";
+import { Posts } from "../schemas/posts.schema";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 
@@ -8,7 +8,7 @@ import { DataSource } from "typeorm";
 export class PostsRepository {
     constructor(@InjectDataSource() private dataSource: DataSource) {}
 
-    async createPost(newPost: CreatedPostDto): Promise<PostsClass> {
+    async createPost(newPost: CreatedPostDto): Promise<Posts> {
         const query = `INSERT INTO posts (title, "shortDescription", content,
         "createdAt", "blogId", "postOwnerUserId","blogName")
         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`;

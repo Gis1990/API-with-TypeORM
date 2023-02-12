@@ -1,6 +1,5 @@
-import { ContextType, ExecutionContext, HttpException, Injectable } from "@nestjs/common";
+import { HttpException, Injectable } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import { GqlExecutionContext } from "@nestjs/graphql";
 
 @Injectable()
 export class JwtAccessTokenAuthGuard extends AuthGuard("jwt") {
@@ -9,12 +8,5 @@ export class JwtAccessTokenAuthGuard extends AuthGuard("jwt") {
             throw new HttpException("Unauthorized", 401);
         }
         return user;
-    }
-
-    getRequest(context: ExecutionContext) {
-        if (context.getType<ContextType | "graphql">() === "graphql") {
-            return GqlExecutionContext.create(context).getContext().req;
-        }
-        return context.switchToHttp().getRequest();
     }
 }

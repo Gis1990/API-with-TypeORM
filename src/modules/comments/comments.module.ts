@@ -15,6 +15,12 @@ import { GetAllCommentsForSpecificPostQuery } from "../../queries/comments/get-a
 import { GetCommentForIdValidationQuery } from "../../queries/comments/get-comment-for-id-validation-query";
 import { BlogsQueryRepository } from "../../query-repositories/blogs.query.repository";
 import { UsersQueryRepository } from "../../query-repositories/users.query.repository";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Users } from "../../schemas/users.schema";
+import { Blogs } from "../../schemas/blogs.schema";
+import { Comments } from "../../schemas/comments.schema";
+import { UsersWhoPutDislikeForComment } from "../../schemas/users.who.put.dislike.for.comment.schema";
+import { UsersWhoPutLikeForComment } from "../../schemas/users.who.put.like.for.comment.schema";
 
 const useCases = [CreateCommentUseCase, UpdateCommentUseCase, DeleteCommentUseCase, LikeOperationForCommentUseCase];
 
@@ -26,7 +32,11 @@ const queries = [
 ];
 
 @Module({
-    imports: [CqrsModule, forwardRef(() => PostsModule)],
+    imports: [
+        CqrsModule,
+        forwardRef(() => PostsModule),
+        TypeOrmModule.forFeature([Users, Blogs, Comments, UsersWhoPutDislikeForComment, UsersWhoPutLikeForComment]),
+    ],
     controllers: [CommentsController],
     providers: [
         CommentsRepository,
