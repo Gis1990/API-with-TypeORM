@@ -4,51 +4,71 @@ import { BanInfoClass, CreatedNewUserDto } from "../dtos/users.dto";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { Users } from "../schemas/users.schema";
+import { BannedBlogs } from "../schemas/banned.blogs.schema";
+import { Devices } from "../schemas/devices.schema";
+import { LoginAttempts } from "../schemas/login.attempts.schema";
 
 @Injectable()
 export class UsersRepository {
     constructor(@InjectDataSource() private dataSource: DataSource) {}
 
     async userConfirmedEmail(id: number): Promise<boolean> {
-        const result = await this.dataSource.query(
-            `UPDATE users SET "emailConfirmed" = true WHERE id = $1 RETURNING id`,
-            [id],
-        );
-        return result[1] > 0;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .update("users")
+            .set({ emailConfirmed: true })
+            .where("id = :id", { id })
+            .execute();
+        return result.affected > 0;
     }
 
     async updateConfirmationCode(id: number): Promise<boolean> {
         const newConfirmationCode = uuidv4();
-        const result = await this.dataSource.query(
-            `UPDATE users SET "emailConfirmationCode" = $1 WHERE id = $2 RETURNING id`,
-            [newConfirmationCode, id],
-        );
-        return result[1] > 0;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .update("users")
+            .set({ emailConfirmationCode: newConfirmationCode })
+            .where("id = :id", { id })
+            .execute();
+        return result.affected > 0;
     }
 
     async addLoginAttempt(id: number, ip: string): Promise<boolean> {
         const date = new Date();
-        const result = await this.dataSource.query(
-            `INSERT INTO "loginAttempts" ("userId", "attemptDate", ip) VALUES($1, $2, $3) RETURNING id`,
-            [id, date, ip],
-        );
-        return !!result[0].id;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .insert()
+            .into("loginAttempts")
+            .values({
+                userId: id,
+                attemptDate: date,
+                ip: ip,
+            })
+            .returning("id")
+            .execute();
+        return !!result.raw[0];
     }
 
     async addPasswordRecoveryCode(id: number, passwordRecoveryData: string, expirationDate: Date): Promise<boolean> {
-        const result = await this.dataSource.query(
-            `UPDATE users SET "emailRecoveryCode" = $1, "emailExpirationDate" = $2 WHERE id = $3 RETURNING id`,
-            [passwordRecoveryData, expirationDate, id],
-        );
-        return result[1] > 0;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .update("users")
+            .set({ emailRecoveryCode: passwordRecoveryData, emailExpirationDate: expirationDate })
+            .where("id = :id", { id })
+            .returning("id")
+            .execute();
+        return result.affected > 0;
     }
 
     async updatePasswordHash(id: number, passwordHash: string): Promise<boolean> {
-        const result = await this.dataSource.query(`UPDATE users SET "passwordHash" = $1 WHERE id = $2 RETURNING id`, [
-            passwordHash,
-            id,
-        ]);
-        return result[1] > 0;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .update("users")
+            .set({ passwordHash: passwordHash })
+            .where("id = :id", { id })
+            .returning("id")
+            .execute();
+        return result.affected > 0;
     }
 
     async addUserDevicesData(
@@ -61,12 +81,20 @@ export class UsersRepository {
         if (!title) {
             title = "Unknown";
         }
-        const result = await this.dataSource.query(
-            `INSERT INTO devices ("userId", ip, "lastActiveDate", "deviceId", title) 
-        VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-            [id, ip, lastActiveDate, deviceId, title],
-        );
-        return !!result[0].id;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .insert()
+            .into("devices")
+            .values({
+                userId: id,
+                ip,
+                lastActiveDate,
+                deviceId,
+                title,
+            })
+            .returning("*")
+            .execute();
+        return !!result.raw[0];
     }
 
     async addCurrentSession(
@@ -79,84 +107,119 @@ export class UsersRepository {
         if (!title) {
             title = "Unknown";
         }
-        const result = await this.dataSource.query(
-            `UPDATE users SET "currentSessionLastActiveDate" = $1,"currentSessionIp" = $2, "currentSessionDeviceId" = $3, "currentSessionTitle" = $4 WHERE id = $5 RETURNING id`,
-            [lastActiveDate, ip, deviceId, title, id],
-        );
-        return result[1] > 0;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .update("users")
+            .set({
+                currentSessionLastActiveDate: lastActiveDate,
+                currentSessionIp: ip,
+                currentSessionDeviceId: deviceId,
+                currentSessionTitle: title,
+            })
+            .where("id = :id", { id })
+            .execute();
+        return result.affected > 0;
     }
 
     async updateLastActiveDate(deviceId: string, newLastActiveDate: Date): Promise<boolean> {
-        const result = await this.dataSource.query(
-            `UPDATE devices SET "lastActiveDate" = $1 WHERE "deviceId" = $2 RETURNING "userId"`,
-            [newLastActiveDate, deviceId],
-        );
-        const userId = result[0][0].userId;
-        await this.dataSource.query(`UPDATE users SET "currentSessionLastActiveDate" = $1 WHERE id = $2`, [
-            newLastActiveDate,
-            userId,
-        ]);
-        return result[1] > 0;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .update("devices")
+            .set({ lastActiveDate: newLastActiveDate })
+            .where("deviceId = :deviceId", { deviceId })
+            .returning("*")
+            .execute();
+        const userId = result.raw.userId;
+        await this.dataSource
+            .createQueryBuilder()
+            .update("users")
+            .set({ currentSessionLastActiveDate: newLastActiveDate })
+            .where("id = :userId", { userId })
+            .execute();
+        return result.affected > 0;
     }
 
     async terminateAllDevices(id: number, deviceId: string): Promise<boolean> {
-        const result = await this.dataSource.query(
-            `DELETE FROM devices WHERE "userId" = $1 AND "deviceId" !=$2 RETURNING id`,
-            [id, deviceId],
-        );
-        return result[1] > 0;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .delete()
+            .from(Devices)
+            .where("deviceId = :deviceId", { deviceId })
+            .andWhere("userId = :id", { id })
+            .execute();
+        return result.affected > 0;
     }
 
     async terminateSpecificDevice(deviceId: string): Promise<boolean> {
-        const result = await this.dataSource.query(`DELETE FROM devices WHERE "deviceId" = $1 RETURNING id`, [
-            deviceId,
-        ]);
-        return result[1] > 0;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .delete()
+            .from(Devices)
+            .where("deviceId = :deviceId", { deviceId })
+            .execute();
+        return result.affected > 0;
     }
 
     async createUser(newUser: CreatedNewUserDto): Promise<Users> {
-        const result = await this.dataSource.query(
-            `INSERT INTO users (login, email, "passwordHash", "createdAt", "emailConfirmed", "emailConfirmationCode", "emailExpirationDate",
-            "emailRecoveryCode", "emailRecoveryExpirationDate", "isBanned", "banDate", "banReason", "currentSessionLastActiveDate", "currentSessionDeviceId",
-             "currentSessionIp", "currentSessionTitle")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
-            [
-                newUser.login,
-                newUser.email,
-                newUser.passwordHash,
-                newUser.createdAt,
-                newUser.emailConfirmed,
-                newUser.emailConfirmationCode,
-                newUser.emailExpirationDate,
-                newUser.emailRecoveryCode,
-                newUser.emailRecoveryExpirationDate,
-                newUser.isBanned,
-                newUser.banDate,
-                newUser.banReason,
-                newUser.currentSessionLastActiveDate,
-                newUser.currentSessionDeviceId,
-                newUser.currentSessionIp,
-                newUser.currentSessionTitle,
-            ],
-        );
-        return result[0];
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .insert()
+            .into("users")
+            .values({
+                login: newUser.login,
+                email: newUser.email,
+                passwordHash: newUser.passwordHash,
+                createdAt: newUser.createdAt,
+                emailConfirmed: newUser.emailConfirmed,
+                emailConfirmationCode: newUser.emailConfirmationCode,
+                emailExpirationDate: newUser.emailExpirationDate,
+                emailRecoveryCode: newUser.emailRecoveryCode,
+                emailRecoveryExpirationDate: newUser.emailRecoveryExpirationDate,
+                isBanned: newUser.isBanned,
+                banDate: newUser.banDate,
+                banReason: newUser.banReason,
+                currentSessionLastActiveDate: newUser.currentSessionLastActiveDate,
+                currentSessionDeviceId: newUser.currentSessionDeviceId,
+                currentSessionIp: newUser.currentSessionIp,
+                currentSessionTitle: newUser.currentSessionTitle,
+            })
+            .returning("*")
+            .execute();
+        return result.raw[0];
     }
 
     async deleteUserById(id: number): Promise<boolean> {
-        await this.dataSource.query(`DELETE FROM users WHERE id = $1 RETURNING id`, [id]);
-        await this.dataSource.query(`DELETE FROM devices WHERE "userId" = $1 RETURNING id`, [id]);
-        await this.dataSource.query(`DELETE FROM "loginAttempts" WHERE "userId" = $1 RETURNING id`, [id]);
-        const result = await this.dataSource.query(`DELETE FROM "bannedBlogs" WHERE "userId" = $1 RETURNING id`, [id]);
-        return result[1] > 0;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .delete()
+            .from(Users)
+            .where("id = :id", { id })
+            .execute();
+        await this.dataSource.createQueryBuilder().delete().from(Devices).where("userId = :id", { id }).execute();
+        await this.dataSource.createQueryBuilder().delete().from(LoginAttempts).where("userId = :id", { id }).execute();
+        await this.dataSource.createQueryBuilder().delete().from(BannedBlogs).where("userId = :id", { id }).execute();
+        return result.affected > 0;
     }
 
     async banUnbanUserBySuperAdmin(banData: BanInfoClass, userId: number): Promise<boolean> {
-        await this.dataSource.query(`DELETE FROM devices WHERE "userId" = $1 RETURNING id`, [userId]);
-        const result = await this.dataSource.query(
-            `UPDATE users SET "isBanned" = $1, "banDate" = $2, "banReason" = $3 WHERE id = $4 RETURNING id`,
-            [banData.isBanned, banData.banDate, banData.banReason, userId],
-        );
-        return result[1] > 0;
+        await this.dataSource
+            .createQueryBuilder()
+            .delete()
+            .from(Devices)
+            .where("userId = :userId", { userId })
+            .execute();
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .update(Users)
+            .set({
+                isBanned: banData.isBanned,
+                banDate: banData.banDate,
+                banReason: banData.banReason,
+            })
+            .where("id = :userId", { userId })
+            .execute();
+
+        return result.affected > 0;
     }
 
     async banUnbanUserByBloggerForBlog(
@@ -165,26 +228,38 @@ export class UsersRepository {
         blogId: number,
         userId: number,
     ): Promise<boolean> {
-        let result;
-        const blogIsAlreadyBanned = await this.dataSource.query(
-            `SELECT * FROM "bannedBlogs" WHERE "userId" = $1 AND "blogId" = $2 AND "isBanned" = true`,
-            [userId, blogId],
-        );
-        if (!!blogIsAlreadyBanned[0] && isBanned) {
+        const blogIsAlreadyBanned = await this.dataSource
+            .getRepository(BannedBlogs)
+            .createQueryBuilder("bannedBlogs")
+            .where("bannedBlogs.userId = :userId", { userId })
+            .andWhere("bannedBlogs.blogId = :blogId", { blogId })
+            .andWhere("bannedBlogs.isBanned = :isBanned", { isBanned: true })
+            .getOne();
+
+        if (blogIsAlreadyBanned && isBanned) {
             return true;
         }
+
         if (isBanned) {
             const date = new Date();
-            result = await this.dataSource.query(
-                `INSERT INTO "bannedBlogs" ("userId", "blogId", "isBanned", "banDate", "banReason") VALUES ($1,$2,true,$3,$4) RETURNING id`,
-                [userId, blogId, date, banReason],
-            );
-            return !!result[0];
+            const bannedBlog = new BannedBlogs();
+            bannedBlog.userId = userId;
+            bannedBlog.blogId = blogId;
+            bannedBlog.isBanned = true;
+            bannedBlog.banDate = date;
+            bannedBlog.banReason = banReason;
+
+            const result = await this.dataSource.getRepository(BannedBlogs).save(bannedBlog);
+            return !!result.id;
         } else {
-            result = await this.dataSource.query(`DELETE FROM "bannedBlogs" WHERE "userId" = $1 RETURNING id`, [
-                userId,
-            ]);
-            return result[1] > 0;
+            const result = await this.dataSource
+                .createQueryBuilder()
+                .delete()
+                .from(BannedBlogs)
+                .where("userId = :userId", { userId })
+                .execute();
+
+            return result.affected > 0;
         }
     }
 }
