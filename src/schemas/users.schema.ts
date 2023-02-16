@@ -5,7 +5,7 @@ export class Users {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ nullable: false })
+    @Column({ collation: "C", nullable: false })
     @Unique(["login"])
     login: string;
 
