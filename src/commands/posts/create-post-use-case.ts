@@ -26,6 +26,9 @@ export class CreatePostUseCase implements ICommandHandler<CreatePostCommand> {
             blogId: Number(command.dto.blogId),
             postOwnerUserId: Number(command.user.id),
             blogName: blog.name,
+            likesCount: 0,
+            dislikesCount: 0,
+            myStatus: "None",
         };
         const createdPost = await this.postsRepository.createPost(createdPostDto);
         return await PostsFactory.createPostViewModelClass(createdPost);

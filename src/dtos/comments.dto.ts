@@ -57,6 +57,9 @@ export class CreatedCommentDto {
     public commentatorOwnerUserId: number;
     public commentatorOwnerUserLogin: string;
     public postId: number;
+    public likesCount: number;
+    public dislikesCount: number;
+    public myStatus: string;
 }
 
 export class CommentClassPaginationDto {

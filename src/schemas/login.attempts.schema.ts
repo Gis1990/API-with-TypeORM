@@ -10,6 +10,9 @@ export class LoginAttempts {
     @JoinColumn({ name: "userId" })
     user: Users;
 
+    @Column({ type: "integer", nullable: false })
+    userId: number;
+
     @Column({ nullable: false })
     attemptDate: Date;
 

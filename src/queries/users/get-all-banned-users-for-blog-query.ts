@@ -22,7 +22,7 @@ export class GetAllBannedUsersForBlogQuery implements IQueryHandler<GetAllBanned
         query: GetAllBannedUsersForBlogCommand,
     ): Promise<UserViewModelForBannedUsersByBloggerPaginationClass> {
         const blog = await this.queryBus.execute(new GetBlogByIdForBanUnbanOperationCommand(query.blogId));
-        if (Number(blog.blogOwnerUserId) !== query.blogOwnerUserId) throw new HttpException("Access denied", 403);
+        if (blog.blogOwnerUserId !== Number(query.blogOwnerUserId)) throw new HttpException("Access denied", 403);
         const users = await this.usersQueryRepository.GetAllBannedUsersForBlog(query.dto, Number(query.blogId));
         return await UsersFactory.createUserViewModelForBannedUsersByBloggerPaginationClass(users);
     }

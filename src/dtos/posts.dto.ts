@@ -78,6 +78,9 @@ export class CreatedPostDto {
     public blogId: number;
     public postOwnerUserId: number;
     public blogName: string;
+    public likesCount: number;
+    public dislikesCount: number;
+    public myStatus: string;
 }
 
 export class PostClassPaginationDto {

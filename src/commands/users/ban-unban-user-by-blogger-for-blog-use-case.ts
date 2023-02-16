@@ -19,7 +19,7 @@ export class BanUnbanUserByBloggerForBlogUseCase implements ICommandHandler<BanU
 
     async execute(command: BanUnbanUserByBloggerForBlogCommand): Promise<boolean> {
         const blog = await this.queryBus.execute(new GetBlogByIdForBanUnbanOperationCommand(command.blogId));
-        if (Number(blog.blogOwnerUserId) !== command.blogOwnerUserId) throw new HttpException("Access denied", 403);
+        if (blog.blogOwnerUserId !== Number(command.blogOwnerUserId)) throw new HttpException("Access denied", 403);
         return this.usersRepository.banUnbanUserByBloggerForBlog(
             command.isBanned,
             command.banReason,

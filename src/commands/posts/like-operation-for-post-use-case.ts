@@ -22,25 +22,20 @@ export class LikeOperationForPostUseCase implements ICommandHandler<LikeOperatio
         }
         const isLiked = post.likesArray.map((user) => user.userId).includes(Number(command.userId));
         const isDisliked = post.dislikesArray.map((user) => user.userId).includes(Number(command.userId));
-        let updateParams;
-        let updateParams2;
-        let update;
-        let update2;
+        const addedAt = new Date();
+        let table1;
+        let table2;
         let doubleOperation;
         // If the user wants to like the post and has not already liked or disliked it,
         // Add the user to the list of users who liked the post
         if (command.likeStatus === "Like" && !isLiked && !isDisliked) {
-            update = `INSERT INTO "usersWhoPutLikeForPost" (login, "userId", "addedAt","postId")
-        VALUES ($1, $2, $3,$4) RETURNING id`;
-            updateParams = [command.login, command.userId, new Date(), Number(command.id)];
+            table1 = "usersWhoPutLikeForPost";
             doubleOperation = false;
         }
         // If the user wants to dislike the post and has not already liked or disliked it,
         // Add the user to the list of users who disliked the post
         else if (command.likeStatus === "Dislike" && !isDisliked && !isLiked) {
-            update = `INSERT INTO "usersWhoPutDislikeForPost" (login, "userId", "addedAt","postId")
-        VALUES ($1, $2, $3,$4) RETURNING id`;
-            updateParams = [command.login, command.userId, new Date(), Number(command.id)];
+            table1 = "usersWhoPutDislikeForPost";
             doubleOperation = false;
         }
         // If the user wants to change his status to None,but don't have like or dislike status
@@ -58,38 +53,39 @@ export class LikeOperationForPostUseCase implements ICommandHandler<LikeOperatio
         // If the user wants to change his status to None and has already liked the post,
         // Remove the user from the list of users who liked the post,
         else if (command.likeStatus === "None" && isLiked) {
-            update = `DELETE FROM "usersWhoPutLikeForPost" WHERE "postId" =$1 AND "userId" = $2 RETURNING id`;
-            updateParams = [Number(command.id), command.userId];
+            table1 = "usersWhoPutLikeForPost";
             doubleOperation = false;
         }
         // If the user wants to change his status to None and has already disliked the post,
         // Remove the user from the list of users who disliked the post,
         else if (command.likeStatus === "None" && isDisliked) {
-            update = `DELETE FROM "usersWhoPutDislikeForPost" WHERE "postId" =$1 AND "userId" = $2 RETURNING id`;
-            updateParams = [Number(command.id), command.userId];
+            table1 = "usersWhoPutDislikeForPost";
             doubleOperation = false;
         }
         // If the user has already liked the post and wants to dislike it,
         // Remove the user from the list of users who liked the post, and add them to the list of users who disliked the post
         else if (isLiked && command.likeStatus === "Dislike") {
-            update = `DELETE FROM "usersWhoPutLikeForPost" WHERE "postId" =$1 AND "userId" = $2`;
-            updateParams = [Number(command.id), command.userId];
-            update2 = `INSERT INTO "usersWhoPutDislikeForPost" (login, "userId", "addedAt","postId")
-        VALUES ($1, $2, $3,$4) RETURNING id`;
-            updateParams2 = [command.login, command.userId, new Date(), Number(command.id)];
+            table1 = "usersWhoPutLikeForPost";
+            table2 = "usersWhoPutDislikeForPost";
             doubleOperation = true;
         }
 
         // If the user has already disliked the post and wants to like it,
         // Remove the user from the list of users who disliked the post, and add them to the list of users who liked the post
         else if (isDisliked && command.likeStatus === "Like") {
-            update = `DELETE FROM "usersWhoPutDislikeForPost" WHERE "postId" =$1 AND "userId" = $2 RETURNING id`;
-            updateParams = [command.id, command.userId];
-            update2 = `INSERT INTO "usersWhoPutLikeForPost" (login, "userId", "addedAt","postId")
-        VALUES ($1, $2, $3,$4) RETURNING id`;
-            updateParams2 = [command.login, command.userId, new Date(), Number(command.id)];
+            table1 = "usersWhoPutDislikeForPost";
+            table2 = "usersWhoPutLikeForPost";
             doubleOperation = true;
         }
-        return this.postsRepository.likeOperation(update, updateParams, update2, updateParams2, doubleOperation);
+        return this.postsRepository.likeOperation(
+            table1,
+            table2,
+            Number(command.id),
+            command.userId,
+            command.login,
+            addedAt,
+            command.likeStatus,
+            doubleOperation,
+        );
     }
 }

@@ -15,7 +15,10 @@ export class Comments {
 
     @ManyToOne(() => Users)
     @JoinColumn({ name: "commentOwnerUserId" })
-    commentOwnerUserId: Users;
+    commentUserId: Users;
+
+    @Column({ type: "integer", nullable: false })
+    commentOwnerUserId: number;
 
     @Column({ name: "commentOwnerUserLogin" })
     commentOwnerUserLogin: string;
@@ -23,4 +26,16 @@ export class Comments {
     @ManyToOne(() => Posts)
     @JoinColumn({ name: "postId" })
     post: Posts;
+
+    @Column({ type: "integer", nullable: false })
+    postId: number;
+
+    @Column({ nullable: false })
+    likesCount: number;
+
+    @Column({ nullable: false })
+    dislikesCount: number;
+
+    @Column({ nullable: false })
+    myStatus: string;
 }

@@ -87,10 +87,10 @@ export class UsersRepository {
             .into("devices")
             .values({
                 userId: id,
-                ip,
-                lastActiveDate,
-                deviceId,
-                title,
+                ip: ip,
+                lastActiveDate: lastActiveDate,
+                deviceId: deviceId,
+                title: title,
             })
             .returning("*")
             .execute();

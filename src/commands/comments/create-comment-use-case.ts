@@ -33,6 +33,9 @@ export class CreateCommentUseCase implements ICommandHandler<CreateCommentComman
             commentatorOwnerUserId: Number(command.user.id),
             commentatorOwnerUserLogin: command.user.login,
             postId: Number(command.postId),
+            likesCount: 0,
+            dislikesCount: 0,
+            myStatus: "None",
         };
         const createdComment = await this.commentsRepository.createComment(createdCommentDto);
         return CommentsFactory.createCommentViewModelClass(createdComment);

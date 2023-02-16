@@ -23,16 +23,25 @@ export class Posts {
     @JoinColumn({ name: "blogId" })
     blog: Blogs;
 
-    @Column({ nullable: false })
+    @Column({ type: "integer", nullable: false })
     blogId: number;
 
     @ManyToOne(() => Users)
     @JoinColumn({ name: "postOwnerUserId" })
     postOwnerUser: Users;
 
-    @Column({ nullable: false })
+    @Column({ type: "integer", nullable: false })
     postOwnerUserId: number;
 
     @Column({ nullable: false })
     blogName: string;
+
+    @Column({ nullable: false })
+    likesCount: number;
+
+    @Column({ nullable: false })
+    dislikesCount: number;
+
+    @Column({ nullable: false })
+    myStatus: string;
 }

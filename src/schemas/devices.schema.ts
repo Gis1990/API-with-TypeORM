@@ -6,10 +6,6 @@ export class Devices {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @ManyToOne(() => Users)
-    @JoinColumn({ name: "userId" })
-    user: Users;
-
     @Column({ nullable: false })
     ip: string;
 
@@ -21,4 +17,11 @@ export class Devices {
 
     @Column({ nullable: false })
     title: string;
+
+    @ManyToOne(() => Users)
+    @JoinColumn({ name: "userId" })
+    deviceOwner: Users;
+
+    @Column({ type: "integer", nullable: false })
+    userId: number;
 }

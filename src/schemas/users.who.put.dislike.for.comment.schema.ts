@@ -12,7 +12,7 @@ export class UsersWhoPutDislikeForComment {
     @Column({ nullable: false })
     login: string;
 
-    @Column({ nullable: false })
+    @Column({ type: "integer", nullable: false })
     commentId: number;
 
     @Column({ nullable: false })

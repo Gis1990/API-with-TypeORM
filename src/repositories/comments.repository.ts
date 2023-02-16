@@ -7,51 +7,104 @@ export class CommentsRepository {
     constructor(@InjectDataSource() private dataSource: DataSource) {}
 
     async createComment(newComment: CreatedCommentDto): Promise<Comments> {
-        const query = `INSERT INTO comments (content, "createdAt", "commentOwnerUserId", "postId", "commentOwnerUserLogin")
-        VALUES ($1, $2, $3, $4, $5) RETURNING *`;
-        const values = [
-            newComment.content,
-            newComment.createdAt,
-            newComment.commentatorOwnerUserId,
-            newComment.postId,
-            newComment.commentatorOwnerUserLogin,
-        ];
-        const result = await this.dataSource.query(query, values);
-        result[0].likesCount = 0;
-        result[0].dislikesCount = 0;
-        result[0].myStatus = "None";
-        return result[0];
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .insert()
+            .into("comments")
+            .values({
+                content: newComment.content,
+                createdAt: newComment.createdAt,
+                commentOwnerUserId: newComment.commentatorOwnerUserId,
+                postId: newComment.postId,
+                commentOwnerUserLogin: newComment.commentatorOwnerUserLogin,
+                likesCount: newComment.likesCount,
+                dislikesCount: newComment.dislikesCount,
+                myStatus: newComment.myStatus,
+            })
+            .returning("*")
+            .execute();
+        return result.raw[0];
     }
 
     async deleteCommentById(id: number): Promise<boolean> {
-        await this.dataSource.query(`DELETE FROM "usersWhoPutDislikeForComment" WHERE "commentId" =$1 `, [id]);
-        await this.dataSource.query(`DELETE FROM "usersWhoPutLikeForComment" WHERE "commentId" = $1 `, [id]);
-        const result = await this.dataSource.query(`DELETE FROM comments WHERE id = $1 RETURNING id`, [id]);
+        await this.dataSource
+            .createQueryBuilder()
+            .delete()
+            .from("usersWhoPutDislikeForComment")
+            .where("id = :id", { id })
+            .returning("id")
+            .execute();
+        await this.dataSource
+            .createQueryBuilder()
+            .delete()
+            .from("usersWhoPutLikeForComment")
+            .where("id = :id", { id })
+            .returning("id")
+            .execute();
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .delete()
+            .from("comments")
+            .where("id = :id", { id })
+            .returning("id")
+            .execute();
         return result[1] > 0;
     }
 
     async updateCommentById(id: number, content: string): Promise<boolean> {
-        const result = await this.dataSource.query(`UPDATE comments SET content = $1 WHERE id = $2  RETURNING id`, [
-            content,
-            id,
-        ]);
-        return result[1] > 0;
+        const result = await this.dataSource
+            .createQueryBuilder()
+            .update("comments")
+            .set({ content: content })
+            .where("id = :id", { id })
+            .returning("id")
+            .execute();
+        return result.affected > 0;
     }
 
     async likeOperation(
-        update: string,
-        updateParams: string[],
-        update2: string,
-        updateParams2: string[],
+        table1: string,
+        table2: string | undefined,
+        postId: number,
+        userId: number,
+        login: string,
+        addedAt: Date,
+        likeStatus: string,
         doubleOperation: boolean,
     ): Promise<boolean> {
         let result;
         if (doubleOperation) {
-            await this.dataSource.query(update, updateParams);
-            result = await this.dataSource.query(update2, updateParams2);
+            await this.dataSource
+                .createQueryBuilder()
+                .delete()
+                .from(`${table1}`)
+                .where("postId = :postId", { postId })
+                .andWhere("userId = :userId", { userId })
+                .execute();
+            result = await this.dataSource
+                .createQueryBuilder()
+                .insert()
+                .into(`${table2}`)
+                .values([{ login, userId, addedAt, postId }])
+                .execute();
         } else {
-            result = await this.dataSource.query(update, updateParams);
+            if (likeStatus !== "None") {
+                result = await this.dataSource
+                    .createQueryBuilder()
+                    .insert()
+                    .into(`${table1}`)
+                    .values([{ login, userId, addedAt, postId }])
+                    .execute();
+            } else {
+                result = await this.dataSource
+                    .createQueryBuilder()
+                    .delete()
+                    .from(`${table1}`)
+                    .where("postId = :postId", { postId })
+                    .andWhere("userId = :userId", { userId })
+                    .execute();
+            }
         }
-        return result[1] > 0;
+        return result.affected > 0;
     }
 }

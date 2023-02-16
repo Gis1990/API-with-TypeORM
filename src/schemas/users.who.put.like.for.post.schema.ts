@@ -9,7 +9,7 @@ export class UsersWhoPutLikeForPost {
     @Column({ nullable: false })
     userId: number;
 
-    @Column({ nullable: false })
+    @Column({ type: "integer", nullable: false })
     postId: number;
 
     @Column({ nullable: true })
