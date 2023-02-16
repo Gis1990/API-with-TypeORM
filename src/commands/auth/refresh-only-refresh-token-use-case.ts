@@ -32,7 +32,7 @@ export class RefreshOnlyRefreshTokenUseCase implements ICommandHandler<RefreshOn
             },
             {
                 secret: this.configService.get<string>("jwtRefreshTokenSecret"),
-                expiresIn: "10 minutes",
+                expiresIn: "20 seconds",
             },
         );
     }
