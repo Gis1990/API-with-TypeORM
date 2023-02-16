@@ -144,8 +144,8 @@ export class UsersRepository {
             .createQueryBuilder()
             .delete()
             .from(Devices)
-            .where("deviceId = :deviceId", { deviceId })
-            .andWhere("userId = :id", { id })
+            .where("userId = :id", { id })
+            .andWhere("deviceId <> :deviceId", { deviceId })
             .execute();
         return result.affected > 0;
     }
