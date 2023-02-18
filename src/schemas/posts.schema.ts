@@ -44,4 +44,10 @@ export class Posts {
 
     @Column({ nullable: false })
     myStatus: string;
+
+    @Column({ type: "jsonb", default: () => "'[]'" })
+    likesArray: Array<any>;
+
+    @Column({ type: "jsonb", default: () => "'[]'" })
+    dislikesArray: Array<any>;
 }

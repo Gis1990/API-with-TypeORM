@@ -26,7 +26,7 @@ export class RefreshAllTokensUseCase implements ICommandHandler<RefreshAllTokens
                 },
                 {
                     secret: this.configService.get<string>("jwtAccessTokenSecret"),
-                    expiresIn: "10 seconds",
+                    expiresIn: "10 minutes",
                 },
             ),
             this.jwtService.signAsync(
@@ -39,7 +39,7 @@ export class RefreshAllTokensUseCase implements ICommandHandler<RefreshAllTokens
                 },
                 {
                     secret: this.configService.get<string>("jwtRefreshTokenSecret"),
-                    expiresIn: "20 seconds",
+                    expiresIn: "10 minutes",
                 },
             ),
         ]);

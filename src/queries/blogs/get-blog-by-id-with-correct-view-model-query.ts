@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { BlogsQueryRepository } from "../../query-repositories/blogs.query.repository";
-import { Blogs } from "../../schemas/blogs.schema";
+import { BlogViewModelClass } from "../../entities/blogs.entity";
 
 export class GetBlogByIdWithCorrectViewModelCommand {
     constructor(public readonly id: string) {}
@@ -10,7 +10,7 @@ export class GetBlogByIdWithCorrectViewModelCommand {
 export class GetBlogByIdWithCorrectViewModelQuery implements IQueryHandler<GetBlogByIdWithCorrectViewModelCommand> {
     constructor(private blogsQueryRepository: BlogsQueryRepository) {}
 
-    async execute(query: GetBlogByIdWithCorrectViewModelCommand): Promise<Blogs | null> {
+    async execute(query: GetBlogByIdWithCorrectViewModelCommand): Promise<BlogViewModelClass | null> {
         return await this.blogsQueryRepository.getBlogByIdWithCorrectViewModel(query.id);
     }
 }

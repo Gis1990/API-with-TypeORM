@@ -138,10 +138,19 @@ export class UsersClassPaginationDto {
 }
 
 export class UserModelClass {
-    public id: string;
+    public id: number;
     public login: string;
     public email: string;
-    public currentSession: any;
-    public banInfo: any;
+    public currentSession: {
+        ip: string;
+        lastActiveDate: Date;
+        deviceId: string;
+        title: string;
+    };
+    public banInfo: {
+        isBanned: boolean;
+        banDate: Date | null;
+        banReason: string | null;
+    };
     public userDevicesData: any;
 }

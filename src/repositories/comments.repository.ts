@@ -65,7 +65,7 @@ export class CommentsRepository {
     async likeOperation(
         table1: string,
         table2: string | undefined,
-        postId: number,
+        commentId: number,
         userId: number,
         login: string,
         addedAt: Date,
@@ -78,14 +78,14 @@ export class CommentsRepository {
                 .createQueryBuilder()
                 .delete()
                 .from(`${table1}`)
-                .where("postId = :postId", { postId })
+                .where("commentId = :commentId", { commentId })
                 .andWhere("userId = :userId", { userId })
                 .execute();
             result = await this.dataSource
                 .createQueryBuilder()
                 .insert()
                 .into(`${table2}`)
-                .values([{ login, userId, addedAt, postId }])
+                .values([{ login, userId, addedAt, commentId }])
                 .execute();
         } else {
             if (likeStatus !== "None") {
@@ -93,14 +93,14 @@ export class CommentsRepository {
                     .createQueryBuilder()
                     .insert()
                     .into(`${table1}`)
-                    .values([{ login, userId, addedAt, postId }])
+                    .values([{ login, userId, addedAt, commentId }])
                     .execute();
             } else {
                 result = await this.dataSource
                     .createQueryBuilder()
                     .delete()
                     .from(`${table1}`)
-                    .where("postId = :postId", { postId })
+                    .where("commentId = :commentId", { commentId })
                     .andWhere("userId = :userId", { userId })
                     .execute();
             }

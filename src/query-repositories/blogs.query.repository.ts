@@ -4,6 +4,7 @@ import { DataSource } from "typeorm";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { BannedBlogs } from "../schemas/banned.blogs.schema";
 import { Blogs } from "../schemas/blogs.schema";
+import { BlogViewModelClass } from "../entities/blogs.entity";
 
 @Injectable()
 export class BlogsQueryRepository {
@@ -17,32 +18,28 @@ export class BlogsQueryRepository {
             sortBy = "createdAt",
             sortDirection = "desc",
         } = dto;
-        const sort = sortDirection === "desc" ? `DESC` : `ASC`;
-        const offset = pageSize * (pageNumber - 1);
-        const queryParamsForAllBlogs: any = [pageSize, offset];
-        const queryParamsForCountAllBlogs: any = [];
-        let whereClause = "";
-        let whereClauseForCount = "";
-        if (searchNameTerm) {
-            whereClause += `AND name ILIKE $1 ORDER BY "${sortBy}"  ${sort} LIMIT $2 OFFSET $3`;
-            queryParamsForAllBlogs.unshift(`%${searchNameTerm}%`);
-            whereClauseForCount += `AND name ILIKE $1`;
-            queryParamsForCountAllBlogs.push(`%${searchNameTerm}%`);
-        } else {
-            whereClause += `ORDER BY "${sortBy}"  ${sort} LIMIT $1 OFFSET $2`;
-        }
-        const query = `SELECT id,name,description,"websiteUrl", "createdAt","isMembership" FROM blogs WHERE "isBanned" = false ${whereClause}`;
-        const cursor = await this.dataSource.query(query, queryParamsForAllBlogs);
 
-        const totalCount = await this.dataSource.query(
-            `SELECT COUNT(*) FROM blogs WHERE "isBanned" = false ${whereClauseForCount}`,
-            queryParamsForCountAllBlogs,
-        );
+        const offset = pageSize * (pageNumber - 1);
+
+        const queryBuilder = this.dataSource
+            .createQueryBuilder()
+            .select("blog")
+            .from(Blogs, "blog")
+            .where("blog.isBanned = :isBanned", { isBanned: false })
+            .orderBy(`blog.${sortBy}`, sortDirection === "desc" ? "DESC" : "ASC")
+            .offset(offset)
+            .limit(pageSize);
+
+        if (searchNameTerm) {
+            queryBuilder.andWhere("blog.name ILIKE :name", { name: `%${searchNameTerm}%` });
+        }
+
+        const [cursor, totalCount] = await Promise.all([queryBuilder.getMany(), queryBuilder.getCount()]);
         return {
-            pagesCount: Math.ceil(Number(totalCount[0].count) / pageSize),
+            pagesCount: Math.ceil(totalCount / pageSize),
             page: pageNumber,
             pageSize: pageSize,
-            totalCount: Number(totalCount[0].count),
+            totalCount: totalCount,
             items: cursor,
         };
     }
@@ -55,31 +52,29 @@ export class BlogsQueryRepository {
             sortBy = "createdAt",
             sortDirection = "desc",
         } = dto;
-        const sort = sortDirection === "desc" ? `DESC` : `ASC`;
+
         const offset = pageSize * (pageNumber - 1);
-        const queryParamsForAllBlogsForAuthorizedUser: any = [userId, pageSize, offset];
-        const queryParamsForCountAllBlogsForAuthorizedUser: any = [userId];
-        let whereClause = "";
-        let whereClauseForCount = "";
+
+        const queryBuilder = this.dataSource
+            .createQueryBuilder()
+            .select("blog")
+            .from(Blogs, "blog")
+            .where("blog.isBanned = :isBanned", { isBanned: false })
+            .andWhere("blog.blogOwnerUserId=:userId", { userId: userId })
+            .orderBy(`blog.${sortBy}`, sortDirection === "desc" ? "DESC" : "ASC")
+            .offset(offset)
+            .limit(pageSize);
+
         if (searchNameTerm) {
-            whereClause += `AND name ILIKE $2 ORDER BY "${sortBy}"  ${sort} LIMIT $3 OFFSET $4`;
-            queryParamsForAllBlogsForAuthorizedUser.splice(1, 0, `%${searchNameTerm}%`);
-            whereClauseForCount += `AND name ILIKE $2`;
-            queryParamsForCountAllBlogsForAuthorizedUser.push(`%${searchNameTerm}%`);
-        } else {
-            whereClause += `ORDER BY "${sortBy}"  ${sort} LIMIT $2 OFFSET $3`;
+            queryBuilder.andWhere("blog.name ILIKE :name", { name: `%${searchNameTerm}%` });
         }
-        const query = `SELECT id,name,description,"websiteUrl", "createdAt","isMembership" FROM blogs WHERE "isBanned" = false AND "blogOwnerUserId"=$1 ${whereClause}`;
-        const cursor = await this.dataSource.query(query, queryParamsForAllBlogsForAuthorizedUser);
-        const totalCount = await this.dataSource.query(
-            `SELECT COUNT(*) FROM blogs WHERE "isBanned" = false AND "blogOwnerUserId"=$1 ${whereClauseForCount}`,
-            queryParamsForCountAllBlogsForAuthorizedUser,
-        );
+
+        const [cursor, totalCount] = await Promise.all([queryBuilder.getMany(), queryBuilder.getCount()]);
         return {
-            pagesCount: Math.ceil(Number(totalCount[0].count) / pageSize),
+            pagesCount: Math.ceil(totalCount / pageSize),
             page: pageNumber,
             pageSize: pageSize,
-            totalCount: Number(totalCount[0].count),
+            totalCount: totalCount,
             items: cursor,
         };
     }
@@ -92,31 +87,27 @@ export class BlogsQueryRepository {
             sortBy = "createdAt",
             sortDirection = "desc",
         } = dto;
-        const sort = sortDirection === "desc" ? `DESC` : `ASC`;
+
         const offset = pageSize * (pageNumber - 1);
-        const queryParamsForAllBlogsForSuperAdmin: any = [pageSize, offset];
-        const queryParamsForCountAllBlogsForSuperAdmin = [];
-        let whereClause = "";
-        let whereClauseForCount = "";
+
+        const queryBuilder = this.dataSource
+            .createQueryBuilder()
+            .select("blog")
+            .from(Blogs, "blog")
+            .orderBy(`blog.${sortBy}`, sortDirection === "desc" ? "DESC" : "ASC")
+            .offset(offset)
+            .limit(pageSize);
+
         if (searchNameTerm) {
-            whereClause += `WHERE name ILIKE $1 ORDER BY "${sortBy}"  ${sort} LIMIT $2 OFFSET $3`;
-            queryParamsForAllBlogsForSuperAdmin.unshift(`%${searchNameTerm}%`);
-            whereClauseForCount += `WHERE name ILIKE $1`;
-            queryParamsForCountAllBlogsForSuperAdmin.push(`%${searchNameTerm}%`);
-        } else {
-            whereClause += `ORDER BY "${sortBy}"  ${sort} LIMIT $1 OFFSET $2`;
+            queryBuilder.where("blog.name ILIKE :name", { name: `%${searchNameTerm}%` });
         }
-        const query = `SELECT * FROM blogs ${whereClause}`;
-        const cursor = await this.dataSource.query(query, queryParamsForAllBlogsForSuperAdmin);
-        const totalCount = await this.dataSource.query(
-            `SELECT COUNT(*) FROM blogs ${whereClauseForCount}`,
-            queryParamsForCountAllBlogsForSuperAdmin,
-        );
+
+        const [cursor, totalCount] = await Promise.all([queryBuilder.getMany(), queryBuilder.getCount()]);
         return {
-            pagesCount: Math.ceil(Number(totalCount[0].count) / pageSize),
+            pagesCount: Math.ceil(totalCount / pageSize),
             page: pageNumber,
             pageSize: pageSize,
-            totalCount: Number(totalCount[0].count),
+            totalCount: totalCount,
             items: cursor,
         };
     }
@@ -132,10 +123,14 @@ export class BlogsQueryRepository {
         if (correctId >= 2147483647) {
             return null;
         }
-        const result = await this.dataSource.query(`SELECT * FROM blogs WHERE id = $1 AND "isBanned" = false`, [
-            correctId,
-        ]);
-        return result[0] || null;
+        const blog = await this.dataSource
+            .createQueryBuilder()
+            .select("blog")
+            .from(Blogs, "blog")
+            .where("blog.id = :correctId", { correctId })
+            .andWhere("blog.isBanned = :isBanned", { isBanned: false })
+            .getOne();
+        return blog || null;
     }
 
     async getBlogByIdForBanUnbanOperation(id: string): Promise<Blogs | null> {
@@ -146,11 +141,16 @@ export class BlogsQueryRepository {
         if (!Number.isInteger(correctId)) {
             return null;
         }
-        const result = await this.dataSource.query(`SELECT * FROM blogs WHERE id = $1`, [correctId]);
-        return result[0] || null;
+        const blog = await this.dataSource
+            .createQueryBuilder()
+            .select("blog")
+            .from(Blogs, "blog")
+            .where("blog.id = :correctId", { correctId })
+            .getOne();
+        return blog || null;
     }
 
-    async getBlogByIdWithCorrectViewModel(id: string): Promise<Blogs | null> {
+    async getBlogByIdWithCorrectViewModel(id: string): Promise<BlogViewModelClass | null> {
         let correctId;
         if (id) {
             correctId = Number(id);
@@ -158,19 +158,36 @@ export class BlogsQueryRepository {
         if (!Number.isInteger(correctId)) {
             return null;
         }
-        const result = await this.dataSource.query(
-            `SELECT id, name, description, "websiteUrl", "createdAt","isMembership" FROM blogs WHERE id= $1`,
-            [correctId],
-        );
-        result[0].id = result[0].id.toString();
-        return result[0] || null;
+        const blog = await this.dataSource
+            .getRepository(Blogs)
+            .createQueryBuilder("blog")
+            .select([
+                "blog.id",
+                "blog.name",
+                "blog.description",
+                "blog.websiteUrl",
+                "blog.createdAt",
+                "blog.isMembership",
+            ])
+            .where("blog.id = :id", { id: correctId })
+            .getOne();
+        if (blog) {
+            const { id, ...rest } = blog;
+            return { id: id.toString(), ...rest };
+        } else {
+            return null;
+        }
     }
 
-    async getBannedBlogsForUser(userId: number): Promise<BannedBlogs | null> {
+    async getBannedBlogsForUser(userId: number): Promise<BannedBlogs[] | null> {
         if (!Number.isInteger(userId)) {
             return null;
         }
-        const result = await this.dataSource.query(`SELECT * FROM "bannedBlogs" WHERE "userId" = $1`, [userId]);
-        return result || null;
+        return await this.dataSource
+            .createQueryBuilder()
+            .select("bannedBlogs")
+            .from(BannedBlogs, "bannedBlogs")
+            .where("bannedBlogs.userId = :userId", { userId })
+            .getRawMany();
     }
 }

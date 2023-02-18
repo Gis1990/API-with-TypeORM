@@ -3,6 +3,11 @@ import { Posts } from "../schemas/posts.schema";
 import { ModelForGettingAllPosts, PostClassPaginationDto } from "../dtos/posts.dto";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
+import { UsersWhoPutLikeForPost } from "../schemas/users.who.put.like.for.post.schema";
+import { UsersWhoPutDislikeForPost } from "../schemas/users.who.put.dislike.for.post.schema";
+import { BannedBlogs } from "../schemas/banned.blogs.schema";
+import { Users } from "../schemas/users.schema";
+import { Blogs } from "../schemas/blogs.schema";
 
 @Injectable()
 export class PostsQueryRepository {
@@ -11,72 +16,89 @@ export class PostsQueryRepository {
     async getAllPosts(dto: ModelForGettingAllPosts, userId: string | undefined): Promise<PostClassPaginationDto> {
         const correctUserId = Number.isInteger(Number(userId)) ? Number(userId) : 0;
         const { pageNumber = 1, pageSize = 10, sortBy = "createdAt", sortDirection = "desc" } = dto;
-        const sort = sortDirection === "desc" ? `DESC` : `ASC`;
+        const sort = sortDirection === "desc" ? "DESC" : "ASC";
         const offset = pageSize * (pageNumber - 1);
-        const queryParamsForAllPosts: any = [correctUserId, pageSize, offset];
-        const query = `SELECT posts.*,        
-        (
-        SELECT COUNT(DISTINCT "usersWhoPutLikeForPost"."id")
-        FROM "usersWhoPutLikeForPost"
-        JOIN users ON users.id = "usersWhoPutLikeForPost"."userId"
-        WHERE "postId" = posts.id
-        AND users."isBanned" = false
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        ) AS "likesCount",
-        (
-        SELECT COUNT(DISTINCT "usersWhoPutDislikeForPost"."id")
-        FROM "usersWhoPutDislikeForPost"
-        JOIN users ON users.id = "usersWhoPutDislikeForPost"."userId"
-        WHERE "postId" = posts.id
-        AND users."isBanned" = false
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        ) AS "dislikesCount",
-        CASE
-        WHEN EXISTS (SELECT 1 FROM "usersWhoPutLikeForPost" WHERE "postId" = posts.id AND "userId" = $1) THEN 'Like'
-        WHEN EXISTS (SELECT 1 FROM "usersWhoPutDislikeForPost" WHERE "postId" = posts.id AND "userId" = $1) THEN 'Dislike'
-        ELSE 'None'
-        END AS "myStatus",
-        (SELECT array_agg(likes) AS "lastLikes"
-        FROM (
-        SELECT "usersWhoPutLikeForPost"."userId" || ' ' || "usersWhoPutLikeForPost".login || ' ' || "usersWhoPutLikeForPost"."addedAt" AS likes
-        FROM "usersWhoPutLikeForPost"
-        JOIN users ON users.id = "usersWhoPutLikeForPost"."userId"
-        WHERE "postId" = posts.id
-        AND users."isBanned" = false
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        ORDER BY  "addedAt" DESC
-        LIMIT 3) subquery)
-        FROM posts
-        JOIN users ON posts."postOwnerUserId" = users.id
-        JOIN blogs ON posts."blogId" = blogs.id
-        LEFT JOIN "usersWhoPutLikeForPost" ON "posts".id = "usersWhoPutLikeForPost"."postId"
-        LEFT JOIN "usersWhoPutDislikeForPost" ON "posts".id = "usersWhoPutDislikeForPost"."postId"
-        WHERE users."isBanned" = false
-        AND blogs."isBanned" = false
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        GROUP BY posts.id
-        ORDER BY posts."${sortBy}"  ${sort} LIMIT $2 OFFSET $3`;
 
-        const cursor = await this.dataSource.query(query, queryParamsForAllPosts);
-
-        const totalCount = await this.dataSource.query(
-            `SELECT COUNT(*) FROM posts 
-        JOIN users ON posts."postOwnerUserId" = users.id 
-        JOIN blogs ON posts."blogId" = blogs.id 
-        WHERE users."isBanned" = false 
-        AND blogs."isBanned" = false 
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)`,
-        );
+        const myStatusSubQueryPart1 = this.dataSource
+            .createQueryBuilder()
+            .select(`"postId"`)
+            .from(UsersWhoPutLikeForPost, "ul")
+            .where("ul.postId = posts.id")
+            .andWhere("ul.userId = :correctUserId", { correctUserId });
+        const myStatusSubQueryPart2 = this.dataSource
+            .createQueryBuilder()
+            .select(`"postId"`)
+            .from(UsersWhoPutDislikeForPost, "ud")
+            .where("ud.postId = posts.id")
+            .andWhere("ud.userId = :correctUserId", { correctUserId });
+        const userQb = await this.dataSource
+            .createQueryBuilder()
+            .select('"userId"')
+            .from(BannedBlogs, "bannedBlogs")
+            .where("bannedBlogs.userId = :correctUserId", { correctUserId });
+        const queryBuilder = await this.dataSource
+            .getRepository(Posts)
+            .createQueryBuilder("posts")
+            .select("posts.*")
+            .innerJoin(Users, "users", "users.id = posts.postOwnerUserId")
+            .innerJoin(Blogs, "blogs", "blogs.id = posts.blogId")
+            .addSelect((subQuery) => {
+                return subQuery
+                    .select("COUNT(DISTINCT usersWhoPutLikeForPost.id)", "likesCount")
+                    .from(UsersWhoPutLikeForPost, "usersWhoPutLikeForPost")
+                    .innerJoin(Users, "users", "users.id = usersWhoPutLikeForPost.userId")
+                    .where("usersWhoPutLikeForPost.postId = posts.id")
+                    .andWhere("users.isBanned = false")
+                    .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+                    .setParameters(userQb.getParameters());
+            }, "likesCount")
+            .addSelect((subQuery) => {
+                return subQuery
+                    .select("COUNT(DISTINCT usersWhoPutDislikeForPost.id)", "dislikesCount")
+                    .from(UsersWhoPutDislikeForPost, "usersWhoPutDislikeForPost")
+                    .innerJoin(Users, "users", "users.id = usersWhoPutDislikeForPost.userId")
+                    .where("usersWhoPutDislikeForPost.postId = posts.id")
+                    .andWhere("users.isBanned = false")
+                    .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+                    .setParameters(userQb.getParameters());
+            }, "dislikesCount")
+            .addSelect(
+                `CASE
+            WHEN (${myStatusSubQueryPart1.getQuery()}) IS NOT NULL THEN 'Like'
+            WHEN (${myStatusSubQueryPart2.getQuery()}) IS NOT NULL THEN 'Dislike'
+            ELSE 'None'
+            END AS "myStatus"`,
+            )
+            .addSelect((subQuery) => {
+                return subQuery.select("array_agg(likes)", "lastLikes").from((subQuery) => {
+                    return subQuery
+                        .select(
+                            `"usersWhoPutLikeForPost"."userId" || ' ' || "usersWhoPutLikeForPost".login || ' ' || "usersWhoPutLikeForPost"."addedAt"`,
+                            "likes",
+                        )
+                        .from("usersWhoPutLikeForPost", "usersWhoPutLikeForPost")
+                        .innerJoin("users", "users", 'users.id = "usersWhoPutLikeForPost"."userId"')
+                        .where("usersWhoPutLikeForPost.postId = posts.id")
+                        .andWhere("users.isBanned = false")
+                        .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+                        .orderBy('"addedAt"', "DESC")
+                        .limit(3);
+                }, "subquery");
+            }, "lastLikes")
+            .where("users.isBanned = false")
+            .andWhere("blogs.isBanned = false")
+            .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+            .setParameters(userQb.getParameters())
+            .groupBy("posts.id")
+            .orderBy(`posts.${sortBy}`, sort)
+            .limit(pageSize)
+            .offset(offset);
+        const [cursor, totalCount] = await Promise.all([queryBuilder.getRawMany(), queryBuilder.getCount()]);
         return {
-            pagesCount: Math.ceil(Number(totalCount[0].count) / pageSize),
+            pagesCount: Math.ceil(totalCount / pageSize),
             page: pageNumber,
             pageSize: pageSize,
-            totalCount: Number(totalCount[0].count),
+            totalCount: totalCount,
             items: cursor,
         };
     }
@@ -88,75 +110,90 @@ export class PostsQueryRepository {
     ): Promise<PostClassPaginationDto> {
         const correctUserId = Number.isInteger(Number(userId)) ? Number(userId) : 0;
         const { pageNumber = 1, pageSize = 10, sortBy = "createdAt", sortDirection = "desc" } = dto;
-        const sort = sortDirection === "desc" ? `DESC` : `ASC`;
+        const sort = sortDirection === "desc" ? "DESC" : "ASC";
         const offset = pageSize * (pageNumber - 1);
-        const queryParamsForAllPostsForSpecificBlog: any = [correctUserId, blogId, pageSize, offset];
-        const query = `SELECT posts.*,         
-        (
-        SELECT COUNT(DISTINCT "usersWhoPutLikeForPost"."id")
-        FROM "usersWhoPutLikeForPost"
-        JOIN users ON users.id = "usersWhoPutLikeForPost"."userId"
-        WHERE "postId" = posts.id
-        AND users."isBanned" = false
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        ) AS "likesCount",
-        (
-        SELECT COUNT(DISTINCT "usersWhoPutDislikeForPost"."id")
-        FROM "usersWhoPutDislikeForPost"
-        JOIN users ON users.id = "usersWhoPutDislikeForPost"."userId"
-        WHERE "postId" = posts.id
-        AND users."isBanned" = false
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        ) AS "dislikesCount",
-        CASE
-        WHEN EXISTS (SELECT 1 FROM "usersWhoPutLikeForPost" WHERE "postId" = posts.id AND "userId" = $1) THEN 'Like'
-        WHEN EXISTS (SELECT 1 FROM "usersWhoPutDislikeForPost" WHERE "postId" = posts.id AND "userId" = $1) THEN 'Dislike'
-        ELSE 'None'
-        END AS "myStatus",
-        (SELECT array_agg(likes) AS "lastLikes"
-        FROM (
-        SELECT "usersWhoPutLikeForPost"."userId" || ' ' || "usersWhoPutLikeForPost".login || ' ' || "usersWhoPutLikeForPost"."addedAt" AS likes
-        FROM "usersWhoPutLikeForPost"
-        JOIN users ON users.id = "usersWhoPutLikeForPost"."userId"
-        WHERE "postId" = posts.id
-        AND users."isBanned" = false
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        ORDER BY  "addedAt" DESC
-        LIMIT 3) subquery)
-        FROM posts
-        JOIN users ON posts."postOwnerUserId" = users.id
-        JOIN blogs ON posts."blogId" = blogs.id
-        LEFT JOIN "usersWhoPutLikeForPost" ON "posts".id = "usersWhoPutLikeForPost"."postId"
-        LEFT JOIN "usersWhoPutDislikeForPost" ON "posts".id = "usersWhoPutDislikeForPost"."postId"
-        WHERE users."isBanned" = false
-        AND blogs."isBanned" = false
-        AND posts."blogId" = $2
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        GROUP BY posts.id
-        ORDER BY posts."${sortBy}"  ${sort} LIMIT $3 OFFSET $4`;
 
-        const cursor = await this.dataSource.query(query, queryParamsForAllPostsForSpecificBlog);
-
-        const totalCount = await this.dataSource.query(
-            `SELECT COUNT(*) FROM posts 
-        JOIN users ON posts."postOwnerUserId" = users.id 
-        JOIN blogs ON posts."blogId" = blogs.id 
-        WHERE users."isBanned" = false 
-        AND blogs."isBanned" = false 
-        AND posts."blogId" = $1
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)`,
-            [blogId],
-        );
+        const myStatusSubQueryPart1 = this.dataSource
+            .createQueryBuilder()
+            .select(`"postId"`)
+            .from(UsersWhoPutLikeForPost, "ul")
+            .where("ul.postId = posts.id")
+            .andWhere("ul.userId = :correctUserId", { correctUserId });
+        const myStatusSubQueryPart2 = this.dataSource
+            .createQueryBuilder()
+            .select(`"postId"`)
+            .from(UsersWhoPutDislikeForPost, "ud")
+            .where("ud.postId = posts.id")
+            .andWhere("ud.userId = :correctUserId", { correctUserId });
+        const userQb = await this.dataSource
+            .createQueryBuilder()
+            .select('"userId"')
+            .from(BannedBlogs, "bannedBlogs")
+            .where("bannedBlogs.userId = :correctUserId", { correctUserId });
+        const queryBuilder = await this.dataSource
+            .getRepository(Posts)
+            .createQueryBuilder("posts")
+            .select("posts.*")
+            .innerJoin(Users, "users", "users.id = posts.postOwnerUserId")
+            .innerJoin(Blogs, "blogs", "blogs.id = posts.blogId")
+            .addSelect((subQuery) => {
+                return subQuery
+                    .select("COUNT(DISTINCT usersWhoPutLikeForPost.id)", "likesCount")
+                    .from(UsersWhoPutLikeForPost, "usersWhoPutLikeForPost")
+                    .innerJoin(Users, "users", "users.id = usersWhoPutLikeForPost.userId")
+                    .where("usersWhoPutLikeForPost.postId = posts.id")
+                    .andWhere("users.isBanned = false")
+                    .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+                    .setParameters(userQb.getParameters());
+            }, "likesCount")
+            .addSelect((subQuery) => {
+                return subQuery
+                    .select("COUNT(DISTINCT usersWhoPutDislikeForPost.id)", "dislikesCount")
+                    .from(UsersWhoPutDislikeForPost, "usersWhoPutDislikeForPost")
+                    .innerJoin(Users, "users", "users.id = usersWhoPutDislikeForPost.userId")
+                    .where("usersWhoPutDislikeForPost.postId = posts.id")
+                    .andWhere("users.isBanned = false")
+                    .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+                    .setParameters(userQb.getParameters());
+            }, "dislikesCount")
+            .addSelect(
+                `CASE
+            WHEN (${myStatusSubQueryPart1.getQuery()}) IS NOT NULL THEN 'Like'
+            WHEN (${myStatusSubQueryPart2.getQuery()}) IS NOT NULL THEN 'Dislike'
+            ELSE 'None'
+            END AS "myStatus"`,
+            )
+            .addSelect((subQuery) => {
+                return subQuery.select("array_agg(likes)", "lastLikes").from((subQuery) => {
+                    return subQuery
+                        .select(
+                            `"usersWhoPutLikeForPost"."userId" || ' ' || "usersWhoPutLikeForPost".login || ' ' || "usersWhoPutLikeForPost"."addedAt"`,
+                            "likes",
+                        )
+                        .from("usersWhoPutLikeForPost", "usersWhoPutLikeForPost")
+                        .innerJoin("users", "users", 'users.id = "usersWhoPutLikeForPost"."userId"')
+                        .where("usersWhoPutLikeForPost.postId = posts.id")
+                        .andWhere("users.isBanned = false")
+                        .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+                        .orderBy('"addedAt"', "DESC")
+                        .limit(3);
+                }, "subquery");
+            }, "lastLikes")
+            .where("users.isBanned = false")
+            .andWhere("blogs.isBanned = false")
+            .andWhere("posts.blogId = :blogId", { blogId })
+            .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+            .setParameters(userQb.getParameters())
+            .groupBy("posts.id")
+            .orderBy(`posts.${sortBy}`, sort)
+            .limit(pageSize)
+            .offset(offset);
+        const [cursor, totalCount] = await Promise.all([queryBuilder.getRawMany(), queryBuilder.getCount()]);
         return {
-            pagesCount: Math.ceil(Number(totalCount[0].count) / pageSize),
+            pagesCount: Math.ceil(totalCount / pageSize),
             page: pageNumber,
             pageSize: pageSize,
-            totalCount: Number(totalCount[0].count),
+            totalCount: totalCount,
             items: cursor,
         };
     }
@@ -173,72 +210,105 @@ export class PostsQueryRepository {
             return null;
         }
         const correctUserId = Number.isInteger(Number(userId)) ? Number(userId) : 0;
-        const result = await this.dataSource.query(
-            `SELECT posts.*,
-        (
-        SELECT COUNT(DISTINCT "usersWhoPutLikeForPost"."id")
-        FROM "usersWhoPutLikeForPost"
-        JOIN users ON users.id = "usersWhoPutLikeForPost"."userId"
-        WHERE "postId" = posts.id
-        AND users."isBanned" = false
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        ) AS "likesCount",
-        (
-        SELECT COUNT(DISTINCT "usersWhoPutDislikeForPost"."id")
-        FROM "usersWhoPutDislikeForPost"
-        JOIN users ON users.id = "usersWhoPutDislikeForPost"."userId"
-        WHERE "postId" = posts.id
-        AND users."isBanned" = false
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        ) AS "dislikesCount",
-        CASE
-        WHEN EXISTS (SELECT 1 FROM "usersWhoPutLikeForPost" WHERE "postId" = posts.id AND "userId" = $1) THEN 'Like'
-        WHEN EXISTS (SELECT 1 FROM "usersWhoPutDislikeForPost" WHERE "postId" = posts.id AND "userId" = $1) THEN 'Dislike'
-        ELSE 'None'
-        END AS "myStatus",
-        (SELECT array_agg(likes) AS "lastLikes"
-        FROM (
-        SELECT "usersWhoPutLikeForPost"."userId" || ' ' || "usersWhoPutLikeForPost".login || ' ' || "usersWhoPutLikeForPost"."addedAt" AS likes
-        FROM "usersWhoPutLikeForPost"
-        JOIN users ON users.id = "usersWhoPutLikeForPost"."userId"
-        WHERE "postId" = posts.id
-        AND users."isBanned" = false
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        ORDER BY  "addedAt" DESC
-        LIMIT 3) subquery)
-        FROM posts
-        JOIN users ON posts."postOwnerUserId" = users.id
-        JOIN blogs ON posts."blogId" = blogs.id
-        LEFT JOIN "usersWhoPutLikeForPost" ON "posts".id = "usersWhoPutLikeForPost"."postId"
-        LEFT JOIN "usersWhoPutDislikeForPost" ON "posts".id = "usersWhoPutDislikeForPost"."postId"
-        WHERE users."isBanned" = false
-        AND blogs."isBanned" = false
-        AND posts.id = $2
-        AND users.id NOT IN (
-        SELECT "userId" FROM "bannedBlogs" WHERE "userId" = users.id)
-        GROUP BY posts.id`,
-            [correctUserId, correctId],
-        );
-        return result[0] || null;
+        const myStatusSubQueryPart1 = this.dataSource
+            .createQueryBuilder()
+            .select(`"postId"`)
+            .from(UsersWhoPutLikeForPost, "ul")
+            .where("ul.postId = posts.id")
+            .andWhere("ul.userId = :correctUserId", { correctUserId });
+        const myStatusSubQueryPart2 = this.dataSource
+            .createQueryBuilder()
+            .select(`"postId"`)
+            .from(UsersWhoPutDislikeForPost, "ud")
+            .where("ud.postId = posts.id")
+            .andWhere("ud.userId = :correctUserId", { correctUserId });
+        const userQb = await this.dataSource
+            .createQueryBuilder()
+            .select('"userId"')
+            .from(BannedBlogs, "bannedBlogs")
+            .where("bannedBlogs.userId = :correctUserId", { correctUserId });
+        const post = await this.dataSource
+            .getRepository(Posts)
+            .createQueryBuilder("posts")
+            .select("posts.*")
+            .innerJoin(Users, "users", "users.id = posts.postOwnerUserId")
+            .innerJoin(Blogs, "blogs", "blogs.id = posts.blogId")
+            .addSelect((subQuery) => {
+                return subQuery
+                    .select("COUNT(DISTINCT usersWhoPutLikeForPost.id)", "likesCount")
+                    .from(UsersWhoPutLikeForPost, "usersWhoPutLikeForPost")
+                    .innerJoin(Users, "users", "users.id = usersWhoPutLikeForPost.userId")
+                    .where("usersWhoPutLikeForPost.postId = posts.id")
+                    .andWhere("users.isBanned = false")
+                    .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+                    .setParameters(userQb.getParameters());
+            }, "likesCount")
+            .addSelect((subQuery) => {
+                return subQuery
+                    .select("COUNT(DISTINCT usersWhoPutDislikeForPost.id)", "dislikesCount")
+                    .from(UsersWhoPutDislikeForPost, "usersWhoPutDislikeForPost")
+                    .innerJoin(Users, "users", "users.id = usersWhoPutDislikeForPost.userId")
+                    .where("usersWhoPutDislikeForPost.postId = posts.id")
+                    .andWhere("users.isBanned = false")
+                    .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+                    .setParameters(userQb.getParameters());
+            }, "dislikesCount")
+            .addSelect(
+                `CASE
+            WHEN (${myStatusSubQueryPart1.getQuery()}) IS NOT NULL THEN 'Like'
+            WHEN (${myStatusSubQueryPart2.getQuery()}) IS NOT NULL THEN 'Dislike'
+            ELSE 'None'
+            END AS "myStatus"`,
+            )
+            .addSelect((subQuery) => {
+                return subQuery.select("array_agg(likes)", "lastLikes").from((subQuery) => {
+                    return subQuery
+                        .select(
+                            `"usersWhoPutLikeForPost"."userId" || ' ' || "usersWhoPutLikeForPost".login || ' ' || "usersWhoPutLikeForPost"."addedAt"`,
+                            "likes",
+                        )
+                        .from("usersWhoPutLikeForPost", "usersWhoPutLikeForPost")
+                        .innerJoin("users", "users", 'users.id = "usersWhoPutLikeForPost"."userId"')
+                        .where("usersWhoPutLikeForPost.postId = posts.id")
+                        .andWhere("users.isBanned = false")
+                        .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+                        .orderBy('"addedAt"', "DESC")
+                        .limit(3);
+                }, "subquery");
+            }, "lastLikes")
+            .where("users.isBanned = false")
+            .andWhere("blogs.isBanned = false")
+            .andWhere("posts.id = :correctId", { correctId })
+            .andWhere("users.id NOT IN (" + userQb.getQuery() + ")")
+            .setParameters(userQb.getParameters())
+            .groupBy("posts.id")
+            .getRawOne();
+        return post || null;
     }
 
     async getPostByIdForOperationWithLikes(id: number): Promise<Posts | null> {
-        const result = await this.dataSource.query(`SELECT * FROM posts WHERE id = $1`, [id]);
-        if (!result[0]) {
+        const post = await this.dataSource
+            .createQueryBuilder()
+            .select("post")
+            .from(Posts, "post")
+            .where("post.id = :id ", { id })
+            .getOne();
+        if (!post) {
             return null;
         } else {
-            result[0].likesArray = await this.dataSource.query(
-                `SELECT * FROM "usersWhoPutLikeForPost" WHERE "postId" = $1`,
-                [id],
-            );
-            result[0].dislikesArray = await this.dataSource.query(
-                `SELECT * FROM "usersWhoPutDislikeForPost" WHERE "postId" = $1`,
-                [id],
-            );
-            return result[0];
+            post.likesArray = await this.dataSource
+                .createQueryBuilder()
+                .select("p")
+                .from(UsersWhoPutLikeForPost, "p")
+                .where("p.postId = :id ", { id })
+                .getMany();
+            post.dislikesArray = await this.dataSource
+                .createQueryBuilder()
+                .select("p")
+                .from(UsersWhoPutDislikeForPost, "p")
+                .where("p.postId = :id ", { id })
+                .getMany();
+            return post;
         }
     }
 }

@@ -27,7 +27,7 @@ export class BlogsController {
     }
 
     @Get(":id")
-    async getBlogById(@Param() params: BlogsIdValidationModel): Promise<BlogViewModelClassPagination> {
+    async getBlogById(@Param() params: BlogsIdValidationModel): Promise<BlogViewModelClass> {
         return await this.queryBus.execute(new GetBlogByIdWithCorrectViewModelCommand(params.id));
     }
 

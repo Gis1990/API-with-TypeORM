@@ -54,13 +54,11 @@ export class UsersQueryRepository {
             queryBuilder.limit(pageSize).offset(offset).getMany(),
             queryBuilder.getCount(),
         ]);
-        console.log("users", users);
-        console.log("totalCount", totalCount);
         return {
-            pagesCount: Math.ceil(Number(totalCount) / pageSize),
+            pagesCount: Math.ceil(totalCount / pageSize),
             page: pageNumber,
             pageSize: pageSize,
-            totalCount: Number(totalCount),
+            totalCount: totalCount,
             items: users,
         };
     }
@@ -112,10 +110,10 @@ export class UsersQueryRepository {
             return viewModel as Users;
         });
         return {
-            pagesCount: Math.ceil(Number(totalCount) / pageSize),
+            pagesCount: Math.ceil(totalCount / pageSize),
             page: pageNumber,
             pageSize: pageSize,
-            totalCount: Number(totalCount),
+            totalCount: totalCount,
             items: correctUsers,
         };
     }
@@ -160,7 +158,7 @@ export class UsersQueryRepository {
             return null;
         }
         const correctUser = {
-            id: user.id.toString(),
+            id: user.id,
             login: user.login,
             email: user.email,
             userDevicesData: correctDevices,
@@ -201,7 +199,7 @@ export class UsersQueryRepository {
             return null;
         }
         const correctUser = {
-            id: user.id.toString(),
+            id: user.id,
             login: user.login,
             email: user.email,
             userDevicesData: devices,
