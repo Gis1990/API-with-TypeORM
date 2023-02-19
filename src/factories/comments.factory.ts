@@ -5,9 +5,10 @@ import {
     CommentViewModelPaginationClass,
 } from "../entities/comments.entity";
 import { CommentClassPaginationDto } from "../dtos/comments.dto";
+import { Comments } from "../schemas/comments.schema";
 
 export class CommentsFactory {
-    static async createCommentViewModelClass(comment: any): Promise<any> {
+    static async createCommentViewModelClass(comment: Comments): Promise<CommentViewModelClass> {
         return new CommentViewModelClass(
             comment.id.toString(),
             comment.content,
@@ -24,7 +25,7 @@ export class CommentsFactory {
         );
     }
 
-    static async createCommentViewModelForBloggerClass(comment: any): Promise<any> {
+    static async createCommentViewModelForBloggerClass(comment: any): Promise<CommentViewModelForBloggerClass> {
         return new CommentViewModelForBloggerClass(
             comment.id.toString(),
             comment.content,

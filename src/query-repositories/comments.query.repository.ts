@@ -201,7 +201,7 @@ export class CommentsQueryRepository {
         const queryBuilder = await this.dataSource
             .getRepository(Comments)
             .createQueryBuilder("comments")
-            .select("comments.*, posts.title, posts.blogId, blogs.name as blogName")
+            .select(`comments.*, posts.title, posts.blogId, blogs.name as "blogName"`)
             .innerJoin(Users, "users", "users.id = comments.commentOwnerUserId")
             .innerJoin(Posts, "posts", "comments.postId = posts.id")
             .innerJoin(Blogs, "blogs", "blogs.id = posts.blogId")
@@ -244,6 +244,7 @@ export class CommentsQueryRepository {
             .limit(pageSize)
             .offset(offset);
         const [cursor, totalCount] = await Promise.all([queryBuilder.getRawMany(), queryBuilder.getCount()]);
+        console.log("cursor", cursor);
         return {
             pagesCount: Math.ceil(totalCount / pageSize),
             page: pageNumber,

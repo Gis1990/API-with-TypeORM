@@ -184,9 +184,9 @@ export class BlogsQueryRepository {
             return null;
         }
         return await this.dataSource
-            .createQueryBuilder()
-            .select("bannedBlogs")
-            .from(BannedBlogs, "bannedBlogs")
+            .getRepository(BannedBlogs)
+            .createQueryBuilder("bannedBlogs")
+            .select("*")
             .where("bannedBlogs.userId = :userId", { userId })
             .getRawMany();
     }
