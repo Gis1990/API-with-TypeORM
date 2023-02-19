@@ -44,7 +44,7 @@ export class CommentsQueryRepository {
         const comment = await this.dataSource
             .getRepository(Comments)
             .createQueryBuilder("comments")
-            .select("comments.*, posts.title, posts.blogId, blogs.name as blogName")
+            .select(`comments.*, posts.title, posts.blogId, blogs.name as "blogName"`)
             .innerJoin(Users, "users", "users.id = comments.commentOwnerUserId")
             .innerJoin(Posts, "posts", "comments.postId = posts.id")
             .innerJoin(Blogs, "blogs", "blogs.id = posts.blogId")
@@ -118,7 +118,7 @@ export class CommentsQueryRepository {
         const queryBuilder = await this.dataSource
             .getRepository(Comments)
             .createQueryBuilder("comments")
-            .select("comments.*, posts.title, posts.blogId, blogs.name as blogName")
+            .select(`comments.*, posts.title, posts.blogId, blogs.name as "blogName"`)
             .innerJoin(Users, "users", "users.id = comments.commentOwnerUserId")
             .innerJoin(Posts, "posts", "comments.postId = posts.id")
             .innerJoin(Blogs, "blogs", "blogs.id = posts.blogId")
